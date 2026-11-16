@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { ArrowRight, Bell, Bird, BookOpen, CalendarDays, Camera, Check, ChevronRight, CloudSun, Fish, History, MapPin, NotebookPen, Sprout, Trophy, Volume2, VolumeX, X } from 'lucide-react';
+import { ArrowRight, Bell, Bird, BookOpen, Check, ChevronRight, CloudSun, Fish, History, MapPin, NotebookPen, Sprout, Trophy, Volume2, VolumeX, X } from 'lucide-react';
 import type { ActiveScreen, PetState, PetType, PetVariety, UserProfile } from '../types/index.ts';
 import type { CareSlot } from '../data/care.ts';
 import { ACTION_ART, GARDEN_CATEGORIES } from '../data/garden.ts';
-import { getSpecies } from '../data/species.ts';
+import { getSpecies, getSpeciesDisplayImage } from '../data/species.ts';
 import { getScheduledCare } from '../utils/careSchedule.ts';
 import type { CareSchedules, ScheduledCare } from '../utils/careSchedule.ts';
 import { Brand } from './ui/Brand.tsx';
@@ -12,6 +12,7 @@ import { PetVarietyModal } from './PetVarietyModal.tsx';
 import { CareDialog } from './garden/CareDialog.tsx';
 import { GuideDialog } from './garden/GuideDialog.tsx';
 import { ScheduleItems } from './garden/ScheduleItems.tsx';
+import { HomeActionIcon } from './garden/HomeActionIcon.tsx';
 
 interface BerandaScreenProps {
   currentPet: PetState;
@@ -56,17 +57,17 @@ export function BerandaScreen({ currentPet, allPets, userProfile, now, schedules
 
     <section className="gh-garden" aria-label="Pilihan tanaman dan ternak">
       <div className="gh-categories">{(Object.keys(GARDEN_CATEGORIES) as PetType[]).map((type) => { const Icon = CATEGORY_ICONS[type]; return <button key={type} type="button" className={type === currentPet.type ? 'is-active' : ''} onClick={() => openSpecies(type)} aria-haspopup="dialog" aria-label={`Pilih jenis ${GARDEN_CATEGORIES[type].label.toLowerCase()}`}><Icon size={19} aria-hidden="true" /><span>{GARDEN_CATEGORIES[type].label}</span></button>; })}</div>
-      <div className={`gh-habitat gh-habitat--${currentPet.type}`} style={{ backgroundImage: `url('${category.image}')` }}>
+      <div className={`gh-habitat gh-habitat--${currentPet.type}`}>
         <div className="gh-habitat-heading"><div><span>{category.habitat}</span><h2>{species.label}</h2></div><button type="button" onClick={() => openSpecies(currentPet.type)} aria-label={`Ganti jenis ${category.label.toLowerCase()}`}>Ganti <ChevronRight size={15} /></button></div>
-        <button type="button" className="gh-subject" onClick={() => setPanel('care')} aria-label={`Buka perawatan ${species.label}`}><img key={species.id} src={species.image} alt={species.label} width={260} height={250} fetchPriority="high" draggable={false} /></button>
+        <button type="button" className="gh-subject" onClick={() => setPanel('care')} aria-label={`Buka perawatan ${species.label}`}><img key={species.id} src={getSpeciesDisplayImage(currentPet)} alt={species.label} width={260} height={250} fetchPriority="high" draggable={false} /></button>
         <span className="gh-habitat-note">{species.note}</span>
       </div>
     </section>
 
     <section className="gh-main-actions" aria-label="Kegiatan utama">
-      <button type="button" onClick={() => setPanel('care')}><span className="gh-action-art"><img src={ACTION_ART.care} alt="" width={100} height={90} /></span><strong>Rawat</strong><span>{currentPet.type === 'tunas' ? 'Siram & pupuk' : currentPet.type === 'koki' ? 'Pakan & air' : 'Pakan & kandang'}</span></button>
-      <button type="button" onClick={openPhoto}><span className="gh-action-art"><img src={ACTION_ART.photo} alt="" width={100} height={90} /></span><strong>Foto kondisi</strong><span>Cari panduan</span></button>
-      <button type="button" onClick={() => onNavigate('jadwal')}><span className="gh-action-art"><img src={ACTION_ART.schedule} alt="" width={100} height={90} /></span><strong>Jadwal</strong><span>Rutinitas harian</span></button>
+      <button type="button" onClick={() => setPanel('care')}><span className="gh-action-art"><HomeActionIcon action="care" /></span><strong>Rawat</strong><span>{currentPet.type === 'tunas' ? 'Siram & pupuk' : currentPet.type === 'koki' ? 'Pakan & air' : 'Pakan & kandang'}</span></button>
+      <button type="button" onClick={openPhoto}><span className="gh-action-art"><HomeActionIcon action="photo" /></span><strong>Foto kondisi</strong><span>Cari panduan</span></button>
+      <button type="button" onClick={() => onNavigate('jadwal')}><span className="gh-action-art"><HomeActionIcon action="schedule" /></span><strong>Jadwal</strong><span>Rutinitas harian</span></button>
     </section>
 
     <section className="gh-today" aria-labelledby="today-heading"><div className="section-title"><h2 id="today-heading">Jadwal hari ini</h2><button className="text-button" type="button" onClick={() => onNavigate('jadwal')}>Lihat semua <ChevronRight size={16} /></button></div>

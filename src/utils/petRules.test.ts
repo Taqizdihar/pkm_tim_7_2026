@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { getSpeciesDisplayImage } from '../data/species.ts';
 import {
   INITIAL_PETS,
   calculateMood,
@@ -26,6 +27,18 @@ test('performing care actions restores vitals and changes mood to happy when abo
   const { updatedPet: sunnyPet } = performCareAction(fertilizedPet, 'action3'); // Matahari (+30 senang)
   assert.equal(sunnyPet.stat3, 90);
   assert.equal(calculateMood(sunnyPet), 'happy');
+});
+
+test('Sorgum illustration changes from wilted to fresh only after watering', () => {
+  const drySorgum = INITIAL_PETS.tunas;
+  assert.equal(getSpeciesDisplayImage(drySorgum), '/assets/generated/sorgum-wilted.webp');
+
+  const fertilized = performCareAction(drySorgum, 'action2').updatedPet;
+  assert.equal(getSpeciesDisplayImage(fertilized), '/assets/generated/sorgum-wilted.webp');
+
+  const watered = performCareAction(drySorgum, 'action1').updatedPet;
+  assert.equal(getSpeciesDisplayImage(watered), '/assets/generated/sorgum.webp');
+  assert.equal(getSpeciesDisplayImage({ ...drySorgum, variety: 'selada' }), '/assets/generated/selada.webp');
 });
 
 test('ranking progression correctly maps total care counts to Level 4 at 12/20', () => {

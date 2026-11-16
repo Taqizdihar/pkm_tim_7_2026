@@ -115,6 +115,12 @@
       "transparent": false,
       "derivative": "sky-morning-v1.webp",
       "prompt": "Use case: stylized-concept. Asset type: seamless-feeling sky background illustration for the top of a mobile Indonesian farming dashboard. A bright fresh pale azure blue morning sky with soft fluffy white cumulus clouds. Clear open blue at the very top; a few soft sunlit clouds near the side edges and across the middle-lower part. Subtle airy dimensional painterly 3D softness like a polished friendly farming app, gentle daylight, no sharp photographic grain. Portrait composition, no horizon and no ground, no trees, no leaves, no animals, no characters, no buildings, no sun disc, no interface, no text, no logos, no icons. Broad calm spaces so dark UI labels remain readable. Blue and white only; the app will fade the bottom to warm cream using CSS."
+    },
+    {
+      "file": "sorgum-wilted.png",
+      "transparent": true,
+      "derivative": "sorgum-wilted.webp",
+      "prompt": "Use case: precise-object-edit. Asset type: transparent PNG alternate state for the Sorgum plant in the Dewi Sri farming app. Edit target: the supplied Sorgum cutout. Make this same mature Sorgum look visibly thirsty and wilted BEFORE watering: leaves become warm yellow to yellow-green, curl downward and droop naturally; the stalk remains upright enough to identify the same plant; the orange-brown seed head, roots, and small soil mound keep their original appearance and placement. Preserve the original botanical identity, painterly dimensional illustration style, full-body framing, proportions, seed head structure, and viewing angle. Center one complete plant with generous padding. Everything outside the plant and soil must be genuinely transparent with clean edges and no colored haze. No watering can, water drops, sparkles, text, labels, UI, scenery, pot, face, or watermark."
     }
   ]
 }

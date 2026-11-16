@@ -37,10 +37,10 @@ Gunakan bahasa Indonesia yang singkat dan sopan. Tulisan isi memakai ukuran seki
 
 ## Aset dan komposisi
 
-Tanaman harus dikenali jenisnya dan tidak diberi mata, hidung, atau wajah. Hewan memakai proporsi alami tanpa topi atau aksesori. Pertahankan ilustrasi spesies serta latar kebun, kolam, dan kandang yang sudah sesuai. Ilustrasi alat perawatan, kamera, dan kalender menegaskan tiga tindakan utama; gambar tidak menggantikan label.
+Tanaman harus dikenali jenisnya dan tidak diberi mata, hidung, atau wajah. Hewan memakai proporsi alami tanpa topi atau aksesori. Pertahankan ilustrasi spesies yang transparan. Kartu utama Tanaman, Ikan, dan Ayam memakai latar warna polos yang lembut tanpa pemandangan kebun, kolam, atau kandang. Tiga kartu aksi beranda memakai ikon garis hijau berbentuk penyiram tanaman, kamera, dan kalender; ikon tidak menggantikan label.
 
-ENERGY 2 / RHYTHM 2 / MOTION 1. Kehangatan berasal dari warna daun, bahan terakota, dan habitat tani. Habitat menjadi fokus visual, kartu aksi dikelompokkan setara, lalu catatan harian mendapat ruang baca tersendiri. Gerak hanya berupa respons singkat saat hover atau tekan. Tidak ada karakter melayang atau animasi dekoratif berulang.
+ENERGY 2 / RHYTHM 2 / MOTION 1. Kehangatan berasal dari warna daun, bahan terakota, dan ilustrasi spesies. Spesies menjadi fokus visual pada kartu utama, kartu aksi dikelompokkan setara, lalu catatan harian mendapat ruang baca tersendiri. Gerak hanya berupa respons singkat saat hover atau tekan. Tidak ada karakter melayang atau animasi dekoratif berulang.
 
-Ikon garis dipakai untuk mengenali tindakan dan tujuan navigasi. Latar krem di atas ilustrasi menjaga kontras nama spesies. Sudut bundar menyatukan elemen yang disentuh; lingkaran hanya untuk ikon kecil, bukan seluruh komponen.
+Ikon garis dipakai untuk mengenali tindakan dan tujuan navigasi. Latar krem di atas ilustrasi menjaga kontras nama spesies. Sorgum dengan catatan air rendah ditampilkan berdaun kuning dan layu; setelah Siram dicatat, ilustrasinya kembali hijau. Perubahan ini menggambarkan progres latihan lokal, bukan diagnosis kondisi tanaman nyata. Sudut bundar menyatukan elemen yang disentuh; lingkaran hanya untuk ikon kecil, bukan seluruh komponen.
 
 Latar beranda memakai langit biru muda dan awan putih lembut, mengikuti referensi dashboard terbaru. Langit memudar ke krem di sekitar bagian bawah habitat agar kegiatan dan catatan tetap tenang dibaca. Label kepala halaman memakai hijau gelap, sementara kontrol kategori memakai bidang putih yang cukup pekat untuk menjaga kontras.

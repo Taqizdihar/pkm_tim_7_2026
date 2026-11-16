@@ -37,7 +37,7 @@ Panduan antislop dan design-taste dipakai untuk kualitas aplikasi interaktif ses
 | R-01 | PASS: lapisan warna pada kanvas luar dan habitat memperjelas isi, bukan dekorasi berulang |
 | R-02 | PASS: pencarian karakter em dash pada `src` dan `index.html` tidak menemukan salinan UI baru |
 | R-03 | PASS: 320/390/1440 px dan tulisan besar tanpa overflow horizontal |
-| R-04 | PASS: ikon menunjukkan tindakan; gambar alat siram, kamera, dan kalender membantu membaca label |
+| R-04 | PASS: ikon garis hijau penyiram tanaman, kamera, dan kalender membantu membaca label tindakan |
 | R-05 | PASS: struktur mengikuti kebutuhan kebun, aksi, jadwal, dan catatan aplikasi |
 | R-06 | PASS: Nunito Sans mengikuti arah visual proyek; hierarki huruf memakai ukuran yang terbatas |
 | R-07 | PASS: tidak ada grid dekoratif |
@@ -53,7 +53,7 @@ Panduan antislop dan design-taste dipakai untuk kualitas aplikasi interaktif ses
 | R-17 | PASS: angka berasal dari state lokal pengguna; indikator latihan dilabeli sebagai simulasi |
 | R-18 | PASS: tidak ada testimoni atau identitas pengguna buatan |
 | R-19 | PASS: gerak singkat untuk respons kontrol; tidak ada dekorasi bergerak terus |
-| R-20 | PASS: spesies, habitat, jurnal, dan rutinitas tani memberi identitas khusus |
+| R-20 | PASS: ilustrasi spesies, jurnal, dan rutinitas tani memberi identitas khusus |
 | R-21 | PASS: satu tema terang yang sesuai arah proyek |
 | R-22 | PASS: ilustrasi baru menunjukkan alat yang terkait aksi aplikasi |
 | R-23 | PASS: aset baru dibuat dalam lingkup permintaan; tanaman tanpa wajah dan hewan tanpa aksesori |
@@ -73,9 +73,9 @@ Panduan antislop dan design-taste dipakai untuk kualitas aplikasi interaktif ses
 | R-37 | PASS: arah visual proyek dan jawaban pengguna menjadi dasar implementasi |
 | R-38 | PASS: ilustrasi tidak diklaim sebagai foto pengguna; layanan belum terhubung ditampilkan dengan jujur |
 | R-39 | PASS: label kontrol, alt gambar, target sentuh, state, semantik, dan reduced motion tersedia |
-| R-40 | PASS: habitat/ilustrasi memakai WebP dan ruang gambar tetap; gambar utama tidak lazy; tidak ada skrip pihak ketiga yang memblokir head |
+| R-40 | PASS: ilustrasi utama memakai WebP dan ruang gambar tetap; gambar utama tidak lazy; tidak ada skrip pihak ketiga yang memblokir head |
 
-ENERGY 2 / RHYTHM 2 / MOTION 1 sesuai hasil: habitat sebagai fokus, kelompok aksi setara, ruang baca untuk jadwal, dan gerak singkat. C-1 sampai C-5 lulus berdasarkan alasan visual, alur nyata, isi sesuai tugas, state/kontrol aksesibel, serta klaim yang sesuai kemampuan aplikasi.
+ENERGY 2 / RHYTHM 2 / MOTION 1 sesuai hasil: ilustrasi spesies sebagai fokus, kelompok aksi setara, ruang baca untuk jadwal, dan gerak singkat. C-1 sampai C-5 lulus berdasarkan alasan visual, alur nyata, isi sesuai tugas, state/kontrol aksesibel, serta klaim yang sesuai kemampuan aplikasi.
 
 ## Batas pemeriksaan
 
@@ -84,3 +84,15 @@ Pemilih foto native dan `capture="environment"` diperiksa dari browser. Kamera f
 ## Pembaruan latar langit
 
 PASS: beranda memakai aset `sky-morning-v1.webp` dengan langit biru dan awan yang memudar ke krem. Teks kepala halaman digelapkan dan pilihan kategori memakai bidang putih lembut. Build produksi berhasil; Chromium pada 320/390/1440 px tidak menunjukkan overflow atau page error, dan perpindahan Beranda → Jadwal → Beranda tetap bekerja. Pratinjau tersedia di `.artifacts/sky-fish-390.png` dan `.artifacts/sky-home-320.png`.
+
+## Pembaruan kartu spesies polos
+
+PASS, 16 November 2026: kartu utama Tanaman, Ikan, dan Ayam memakai warna polos tanpa gambar pemandangan. Ilustrasi spesies transparan tetap dimuat. Build produksi dan pemeriksaan TypeScript berhasil. Chromium menunjukkan `background-image: none`, gambar spesies termuat, dan tidak ada overflow horizontal pada lebar 390 px untuk ketiga kategori serta 320 px untuk Selada. Pratinjau ada di `.artifacts/plain-tunas-390.png`, `.artifacts/plain-koki-390.png`, `.artifacts/plain-kuning-390.png`, dan `.artifacts/plain-tunas-320.png`.
+
+## Pembaruan ikon kartu aksi
+
+PASS, 16 November 2026: kartu Rawat, Foto kondisi, dan Jadwal di beranda memakai ikon garis hijau penyiram tanaman, kamera, dan kalender sesuai referensi. Ikon dekoratif disembunyikan dari pembaca layar karena label tombol sudah terlihat. Build produksi dan pemeriksaan TypeScript berhasil. Chromium pada 320 dan 390 px menunjukkan ketiga ikon termuat tanpa overflow horizontal. Pratinjau ada di `.artifacts/action-icons-320.png` dan `.artifacts/action-icons-390.png`.
+
+## Pembaruan kondisi Sorgum
+
+PASS, 16 November 2026: Sorgum dengan status air latihan rendah memakai ilustrasi daun kuning layu. Tombol Siram menaikkan catatan air dari 10 ke 40, lalu beranda dan dialog perawatan menampilkan ilustrasi hijau. Pemupukan saja tidak mengubah ilustrasi. Chromium pada 390 px menunjukkan perubahan setelah klik Siram dan hasil hijau bertahan setelah muat ulang, tanpa overflow horizontal. Pratinjau ada di `.artifacts/sorgum-before-390.png` dan `.artifacts/sorgum-after-390.png`. Seluruh 19 pengujian, TypeScript, dan build produksi lulus.

@@ -1,16 +1,17 @@
-import type { PetType, PetVariety } from '../types/index.ts';
+import type { PetState, PetType, PetVariety } from '../types/index.ts';
 
 export interface Species {
   id: PetVariety;
   label: string;
   image: string;
+  wiltedImage?: string;
   note: string;
   group: 'sayuran' | 'buah' | 'bijian' | 'ikan' | 'unggas';
 }
 
 export const SPECIES: Record<PetType, Species[]> = {
   tunas: [
-    { id: 'sorgum', label: 'Sorgum', image: '/assets/generated/sorgum.webp', note: 'Biji-bijian', group: 'bijian' },
+    { id: 'sorgum', label: 'Sorgum', image: '/assets/generated/sorgum.webp', wiltedImage: '/assets/generated/sorgum-wilted.webp', note: 'Biji-bijian', group: 'bijian' },
     { id: 'kangkung', label: 'Kangkung', image: '/assets/generated/kangkung.webp', note: 'Sayuran daun', group: 'sayuran' },
     { id: 'sawi', label: 'Sawi', image: '/assets/generated/sawi.webp', note: 'Sayuran daun', group: 'sayuran' },
     { id: 'selada', label: 'Selada', image: '/assets/generated/selada.webp', note: 'Sayuran daun', group: 'sayuran' },
@@ -30,4 +31,11 @@ export const SPECIES: Record<PetType, Species[]> = {
 
 export function getSpecies(type: PetType, variety?: PetVariety): Species {
   return SPECIES[type].find((item) => item.id === variety) ?? SPECIES[type][0];
+}
+
+export function getSpeciesDisplayImage(pet: PetState): string {
+  const species = getSpecies(pet.type, pet.variety);
+  return pet.type === 'tunas' && pet.stat2 <= 25 && species.wiltedImage
+    ? species.wiltedImage
+    : species.image;
 }

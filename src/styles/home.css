@@ -25,10 +25,9 @@
 .gh-categories button { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 45px; padding: 9px 3px; border: 1px solid transparent; border-radius: 12px; color: #395b51; font-size: .9rem; font-weight: 850; }
 .gh-categories button:hover { background: #fff9; }
 .gh-categories button.is-active { background: white; color: var(--forest); border-color: #d6e4cc; box-shadow: 0 3px 8px #27482d09; }
-.gh-habitat { position: relative; isolation: isolate; height: 248px; overflow: hidden; border-radius: 25px; background-size: cover; background-position: center 62%; background-color: #b6d3a0; }
-.gh-habitat::before { content: ''; position: absolute; z-index: -1; inset: 0; background: linear-gradient(#1434255e, transparent 39%, transparent 67%, #12342044); }
-.gh-habitat--koki { background-position: center 52%; }
-.gh-habitat--kuning { background-position: center 56%; }
+.gh-habitat { position: relative; isolation: isolate; height: 248px; overflow: hidden; border: 1px solid #d3e1c6; border-radius: 25px; background: #e4f1d5; }
+.gh-habitat--koki { border-color: #cde3df; background: #e2f2ef; }
+.gh-habitat--kuning { border-color: #e8d9c1; background: #f5ead7; }
 .gh-habitat-heading { position: absolute; z-index: 3; top: 16px; left: 17px; right: 14px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; color: white; }
 .gh-habitat-heading > div { min-width: 0; padding: 9px 12px; border-radius: 14px; background: #fffdf1f2; color: var(--forest-deep); }
 .gh-habitat-heading > div > span { display: block; color: #536b47; font-size: .62rem; font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
@@ -47,7 +46,7 @@
 .gh-main-actions > button:nth-child(3) { background: #edf1e6; }
 .gh-main-actions > button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px #304b2610; }
 .gh-action-art { display: grid; place-items: center; width: 100%; height: 80px; margin-bottom: 5px; }
-.gh-action-art img { width: 91px; height: 80px; object-fit: contain; mix-blend-mode: multiply; }
+.gh-action-art svg { width: 54px; height: 54px; color: var(--forest); }
 .gh-main-actions strong { font-size: .96rem; font-weight: 900; color: #24492f; }
 .gh-main-actions > button > span:last-child { margin-top: 3px; color: #596b56; font-size: .65rem; }
 .gh-today { display: grid; gap: 10px; }
@@ -164,7 +163,7 @@
   .gh-habitat--koki .gh-subject { width: 310px; height: 185px; }
   .gh-habitat--kuning .gh-subject { width: 275px; height: 220px; }
   .gh-action-art { height: 96px; }
-  .gh-action-art img { width: 112px; height: 96px; }
+  .gh-action-art svg { width: 66px; height: 66px; }
 }
 @media (max-width: 360px) {
   .garden-home-v2 { gap: 18px; }
@@ -179,7 +178,7 @@
   .gh-habitat--kuning .gh-subject { width: 190px; height: 160px; right: -4px; }
   .gh-main-actions { gap: 7px; }
   .gh-action-art { height: 66px; }
-  .gh-action-art img { width: 76px; height: 66px; }
+  .gh-action-art svg { width: 46px; height: 46px; }
   .gh-main-actions strong { font-size: .83rem; }
   .gh-main-actions > button > span:last-child { font-size: .58rem; }
   .gh-feature-grid { gap: 7px; }
