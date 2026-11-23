@@ -52,3 +52,101 @@ Progres dan jadwal disimpan per ID spesies. Format lama berdasarkan kategori tet
 - Kunci AI/cuaca dan autentikasi produksi harus berada di backend. Jangan menaruh rahasia pada variabel `VITE_*` atau browser.
 
 Hasil pemeriksaan frontend dan alur yang diperiksa tercatat di [docs/frontend-verification.md](docs/frontend-verification.md).
+
+---
+
+## Rancangan backend dan database MySQL (tahap pengembangan)
+
+> **Status:** bagian ini adalah **rancangan untuk Node.js + MySQL + CMS**, bukan klaim bahwa backend sudah berjalan. Frontend di atas masih menggunakan data TypeScript statis dan `localStorage`. Menambah Pet melalui database baru akan tampil di React setelah API dan katalog dinamis selesai diintegrasikan.
+
+Tujuan desain: anggota KWT Dewi Sri dapat mencatat budidaya dan riwayatnya; admin pengembang dapat menambah kategori/jenis (misalnya **Ayam Jantan**), mengganti gambar sesuai kondisi, mengelola tindakan dan panduan; integrasi Tanya Tani nantinya melalui backend ke layanan RAG. API key dan password **tidak** disimpan dalam repository atau pengaturan publik.
+
+### Skrip SQL untuk phpMyAdmin (tanpa fitur Import)
+
+Database **`dewi_sri` sudah dibuat secara manual** melalui phpMyAdmin. Karena itu kedua skrip di bawah memakai `USE dewi_sri;` dan **tidak** menjalankan `CREATE DATABASE`.
+
+| Urutan | Skrip | Isi |
+| --- | --- | --- |
+| 1 | [`docs/database/01_schema.sql`](docs/database/01_schema.sql) | **DDL:** 19 tabel, foreign key, unique key, indeks, dan tipe data |
+| 2 | [`docs/database/02_seed.sql`](docs/database/02_seed.sql) | **DML:** 3 role, 6 kategori, 11 jenis budidaya, 8 tindakan, 33 hubungan tindakan per jenis, dan referensi 12 aset |
+
+**Cara menjalankan:**
+
+1. Jalankan Laragon, lalu buka **phpMyAdmin**. Pilih database kosong bernama **`dewi_sri`** pada panel sebelah kiri.
+2. Buka file **`01_schema.sql`** dari tautan di atas, **salin isi SQL-nya** (bukan URL atau tampilan HTML GitHub), lalu buka tab **SQL** di phpMyAdmin. Tempel seluruh skrip dan tekan **Go/Kirim**.
+3. Pastikan **19 tabel** terdaftar di tab **Structure/Struktur**. Skrip DDL juga mengakhiri proses dengan `SHOW TABLES;`.
+4. Buka file **`02_seed.sql`**, salin seluruh isinya, lalu tempel pada tab **SQL** di database yang sama dan tekan **Go/Kirim**.
+5. Hasil awal yang diharapkan: **6 kategori, 11 jenis Pet, 8 tindakan dasar, 33 hubungan jenis–tindakan, 12 referensi media, 12 hubungan jenis–media**. Tabel aktivitas pengguna dan percakapan masih kosong, begitu pula konten panduan hingga dimigrasikan/ditambahkan.
+6. Jika muncul kesalahan, **catat pesan kesalahan dan perintah yang gagal**, kemudian perbaiki perintah tersebut; jangan langsung melakukan reset database.
+
+Skrip ditujukan untuk **MySQL 8.0+/8.4, InnoDB, UTF-8 (`utf8mb4`)**. Laragon dapat menggunakan mesin/versi database berbeda (misalnya MariaDB); cek versinya dengan `SELECT VERSION();` dan uji kompatibilitas bila berbeda. SQL disediakan agar **di-copy–paste dari tab SQL**, bukan melalui menu **Import**.
+
+Kedua skrip **tidak** menjalankan `DROP TABLE`, `DELETE`, atau `TRUNCATE`. DDL menggunakan `CREATE TABLE IF NOT EXISTS`; seed bersifat **no-op pada kunci unik yang sudah ada**, sehingga pengulangan tidak otomatis mengubah data CMS yang telah diedit. **Catatan:** `IF NOT EXISTS` tidak mengubah struktur tabel yang telanjur ada, dan bukan mekanisme migrasi skema.
+
+### ERD — A. Katalog budidaya dan CMS
+
+```mermaid
+erDiagram
+    CULTIVATION_CATEGORIES |o--o{ CULTIVATION_CATEGORIES : parent_dari
+    CULTIVATION_CATEGORIES ||--o{ SPECIES : mengelompokkan
+    SPECIES ||--o{ SPECIES_MEDIA : memiliki
+    MEDIA_ASSETS ||--o{ SPECIES_MEDIA : digunakan
+    SPECIES ||--o{ SPECIES_CARE_ACTIONS : mengizinkan
+    CARE_ACTIONS ||--o{ SPECIES_CARE_ACTIONS : mendefinisikan
+    SPECIES ||--o{ CULTIVATION_GUIDES : dipandu
+    USERS |o--o{ MEDIA_ASSETS : mengunggah
+    USERS |o--o{ CULTIVATION_GUIDES : menyunting
+    USERS |o--o{ APP_SETTINGS : mengubah
+    USERS |o--o{ ADMIN_AUDIT_LOGS : tercatat
+```
+
+`cultivation_categories` menyimpan hierarki **Tanaman → Sayuran/Buah/Biji-bijian**, serta kategori **Ikan** dan **Ayam**. `species` adalah **master katalog**, bukan Pet pribadi. `species_media.state_key` dapat mengacu ke `normal`, `wilted`, `sick`, dan keadaan tambahan dari CMS; `species_care_actions.slot_key` sementara mempertahankan kompatibilitas `action1`–`action3` frontend.
+
+### ERD — B. Pengguna, perawatan, poin, dan Tanya Tani
+
+```mermaid
+erDiagram
+    USERS ||--o{ USER_ROLES : memiliki
+    ROLES ||--o{ USER_ROLES : memberikan
+    USERS ||--o| USER_PREFERENCES : mengatur
+    USERS ||--o{ USER_CULTIVATIONS : merawat
+    SPECIES ||--o{ USER_CULTIVATIONS : menjadi_jenis
+    USER_CULTIVATIONS ||--o{ CARE_SCHEDULES : menjadwalkan
+    SPECIES_CARE_ACTIONS ||--o{ CARE_SCHEDULES : dilakukan
+    USER_CULTIVATIONS ||--o{ CARE_LOGS : mencatat
+    SPECIES_CARE_ACTIONS ||--o{ CARE_LOGS : direkam
+    CARE_SCHEDULES |o--o{ CARE_LOGS : penyelesaian
+    USERS ||--o{ POINT_TRANSACTIONS : menerima
+    USERS ||--o{ CHAT_CONVERSATIONS : membuat
+    CHAT_CONVERSATIONS ||--o{ CHAT_MESSAGES : berisi
+    MEDIA_ASSETS |o--o{ CHAT_MESSAGES : melampirkan
+```
+
+Satu anggota dapat membuat **lebih dari satu `user_cultivations`** untuk jenis yang sama (misalnya dua area kangkung). Satu kegiatan harian tercatat di `care_logs`; penyelesaian jadwal ditentukan dari `schedule_id` + `local_date`. `point_transactions` mencatat hadiah poin terpisah dari total kegiatan yang menentukan peringkat. Chat dan metadata hasil RAG disimpan di MySQL, sedangkan model dan vector store dapat dikelola oleh penyedia RAG terpisah.
+
+### Inventaris 19 tabel
+
+| Kelompok | Tabel |
+| --- | --- |
+| Akun dan hak akses (4) | `users`, `roles`, `user_roles`, `user_preferences` |
+| Master budidaya dan konten CMS (7) | `cultivation_categories`, `species`, `media_assets`, `species_media`, `care_actions`, `species_care_actions`, `cultivation_guides` |
+| Aktivitas anggota (4) | `user_cultivations`, `care_schedules`, `care_logs`, `point_transactions` |
+| Konsultasi (2) | `chat_conversations`, `chat_messages` |
+| Pengaturan dan jejak admin (2) | `app_settings`, `admin_audit_logs` |
+
+### Aturan perubahan struktur selama PKM
+
+- **Perubahan data** (mis. nama Pet, status panduan, gambar) dilakukan memakai `INSERT`, `UPDATE`, atau CMS setelah terbangun. Menjalankan ulang seed **bukan** cara memperbarui baris lama.
+- **Perubahan struktur** dilakukan melalui perintah **`ALTER TABLE`** baru pada tab SQL dan dicatat dalam skrip perubahan berikutnya, misalnya:
+
+  ```sql
+  -- Contoh PENAMBAHAN kolom, hanya dijalankan sekali apabila belum ada.
+  ALTER TABLE species ADD COLUMN harvest_days INT UNSIGNED NULL;
+  ```
+
+- Hindari `DROP TABLE`, `TRUNCATE`, atau penghapusan foreign key tanpa menilai dampaknya. Cadangkan data sebelum migrasi yang berisiko meskipun masih lokal.
+- `species_care_actions.species_id` harus sesuai dengan `user_cultivations.species_id` pada jadwal/jurnal; **backend wajib memvalidasi kesesuaian tersebut** karena foreign key masing-masing saja belum menjamin keduanya sejenis.
+- Seluruh kunci rahasia RAG/cuaca disimpan di **environment server Node.js** (misalnya `.env` yang di-`gitignore`), bukan di `app_settings`, `VITE_*`, atau browser.
+- Metadata gambar disimpan di `media_assets`, sedangkan file fisiknya di penyimpanan server. Aset katalog bersifat publik; foto konsultasi pribadi harus mempunyai kontrol akses.
+- Data lama `localStorage` perlu direncanakan migrasinya setelah API siap; jangan langsung menghapus data browser. Pengisian akun admin dan autentikasi server masih perlu diimplementasikan, **tidak ada password atau akun admin dummy di seed**.
+- Perubahan jenis Pet yang dikelola melalui CMS baru benar-benar dinamis setelah `src/types/index.ts`, `src/data/species.ts`, `src/data/care.ts`, `src/utils/petRules.ts`, serta pemanggilan state/frontend lainnya direfaktor untuk membaca API.
