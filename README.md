@@ -1,5 +1,9 @@
 # Dewi Sri
 
+## Backend lokal
+
+API Node.js/Express kini tersedia di [`backend/`](backend/README.md). Jalankan MySQL Laragon dengan database `dewi_sri` yang sudah ada, lalu dari direktori `backend` jalankan `npm install`, sesuaikan `.env` dengan kredensial lokal, dan jalankan `npm run dev`. API berjalan di `127.0.0.1:3001`; frontend tetap dijalankan terpisah di port 3000. Periksa `GET /api/v1/health/database` untuk koneksi nyata dan `GET /api/v1/species/sorgum` untuk katalog. Backend hanya membaca tabel yang ada; tidak menjalankan skrip SQL atau migrasi otomatis.
+
 Frontend React dan TypeScript untuk merawat tanaman, ikan, dan ayam. Aplikasi berjalan secara lokal di browser; tidak membutuhkan kata sandi atau kunci API.
 
 ## Menjalankan
@@ -57,7 +61,7 @@ Hasil pemeriksaan frontend dan alur yang diperiksa tercatat di [docs/frontend-ve
 
 ## Rancangan backend dan database MySQL (tahap pengembangan)
 
-> **Status:** bagian ini adalah **rancangan untuk Node.js + MySQL + CMS**, bukan klaim bahwa backend sudah berjalan. Frontend di atas masih menggunakan data TypeScript statis dan `localStorage`. Menambah Pet melalui database baru akan tampil di React setelah API dan katalog dinamis selesai diintegrasikan.
+> **Status:** API backend baca-saja untuk kesehatan dan katalog sudah tersedia di `backend/`. CMS dan integrasi frontend masih direncanakan. Frontend di atas masih menggunakan data TypeScript statis dan `localStorage`. Menambah Pet melalui database baru akan tampil di React setelah katalog dinamis diintegrasikan.
 
 Tujuan desain: anggota KWT Dewi Sri dapat mencatat budidaya dan riwayatnya; admin pengembang dapat menambah kategori/jenis (misalnya **Ayam Jantan**), mengganti gambar sesuai kondisi, mengelola tindakan dan panduan; integrasi Tanya Tani nantinya melalui backend ke layanan RAG. API key dan password **tidak** disimpan dalam repository atau pengaturan publik.
 
