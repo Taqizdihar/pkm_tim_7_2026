@@ -9,14 +9,14 @@ INSERT INTO roles (code,name,description) VALUES
   ('admin','Administrator','Akses CMS pengembang'),
   ('member','Anggota KWT','Pengguna aplikasi Dewi Sri'),
   ('educator','Penyuluh','Pengelola panduan budidaya')
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=roles.id;
 
 -- B. Kategori utama dan subkategori
 INSERT INTO cultivation_categories (name,slug,habitat_key,sort_order,is_active) VALUES
   ('Tanaman','tanaman','kebun',1,1),
   ('Ikan','ikan','kolam',2,1),
   ('Ayam','ayam','kandang',3,1)
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=cultivation_categories.id;
 
 INSERT INTO cultivation_categories (parent_id,name,slug,habitat_key,sort_order,is_active)
 SELECT p.id, t.name, t.slug, 'kebun', t.sort_order, 1
@@ -26,7 +26,7 @@ JOIN (
   UNION ALL SELECT 'Buah' AS name, 'buah' AS slug, 2 AS sort_order
   UNION ALL SELECT 'Biji-bijian' AS name, 'bijian' AS slug, 3 AS sort_order
 ) t ON p.slug='tanaman'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=cultivation_categories.id;
 
 -- C. Sebelas jenis sesuai src/data/species.ts (tanpa menimpa perubahan pengguna)
 INSERT INTO species (category_id,name,slug,short_note,sort_order)
@@ -44,7 +44,7 @@ FROM (
   UNION ALL SELECT 'ikan' AS category_slug, 'Ikan mas' AS name, 'mas' AS slug, 'Ikan air tawar' AS short_note, 10 AS sort_order
   UNION ALL SELECT 'ayam' AS category_slug, 'Ayam petelur' AS name, 'petelur' AS slug, 'Unggas darat' AS short_note, 11 AS sort_order
 ) t JOIN cultivation_categories c ON c.slug=t.category_slug
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species.id;
 
 -- D. Tindakan perawatan standar
 INSERT INTO care_actions (code,name,description,icon_key) VALUES
@@ -56,7 +56,7 @@ INSERT INTO care_actions (code,name,description,icon_key) VALUES
   ('bersihkan_kolam', 'Bersihkan kolam', 'Catat pembersihan area kolam.', 'clean'),
   ('beri_minum', 'Beri minum', 'Catat pengisian air minum bersih.', 'water'),
   ('bersihkan_kandang', 'Bersihkan kandang', 'Catat pembersihan alas dan kandang.', 'clean')
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=care_actions.id;
 
 -- E. Relasi aktivitas spesies sesuai slot action1-3 yang berlaku di frontend sekarang
 INSERT INTO species_care_actions (species_id,care_action_id,slot_key,description,effect_config_json,sort_order)
@@ -65,7 +65,7 @@ FROM species s JOIN cultivation_categories c ON c.id=s.category_id
 LEFT JOIN cultivation_categories p ON p.id=c.parent_id
 JOIN care_actions a ON a.code='siram'
 WHERE COALESCE(p.slug,c.slug)='tanaman'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_care_actions.id;
 
 INSERT INTO species_care_actions (species_id,care_action_id,slot_key,description,effect_config_json,sort_order)
 SELECT s.id,a.id,'action2','Catat pemupukan sesuai kebutuhan.',JSON_OBJECT('stat1',35,'stat3',20),2
@@ -73,7 +73,7 @@ FROM species s JOIN cultivation_categories c ON c.id=s.category_id
 LEFT JOIN cultivation_categories p ON p.id=c.parent_id
 JOIN care_actions a ON a.code='beri_pupuk'
 WHERE COALESCE(p.slug,c.slug)='tanaman'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_care_actions.id;
 
 INSERT INTO species_care_actions (species_id,care_action_id,slot_key,description,effect_config_json,sort_order)
 SELECT s.id,a.id,'action3','Catat pemeriksaan cahaya tanaman.',JSON_OBJECT('stat3',30,'stat1',10),3
@@ -81,7 +81,7 @@ FROM species s JOIN cultivation_categories c ON c.id=s.category_id
 LEFT JOIN cultivation_categories p ON p.id=c.parent_id
 JOIN care_actions a ON a.code='cek_cahaya'
 WHERE COALESCE(p.slug,c.slug)='tanaman'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_care_actions.id;
 
 INSERT INTO species_care_actions (species_id,care_action_id,slot_key,description,effect_config_json,sort_order)
 SELECT s.id,a.id,'action1','Catat pemberian pakan ikan.',JSON_OBJECT('stat1',35,'stat3',20),1
@@ -89,7 +89,7 @@ FROM species s JOIN cultivation_categories c ON c.id=s.category_id
 LEFT JOIN cultivation_categories p ON p.id=c.parent_id
 JOIN care_actions a ON a.code='beri_makan'
 WHERE COALESCE(p.slug,c.slug)='ikan'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_care_actions.id;
 
 INSERT INTO species_care_actions (species_id,care_action_id,slot_key,description,effect_config_json,sort_order)
 SELECT s.id,a.id,'action2','Catat pergantian air kolam.',JSON_OBJECT('stat2',30,'stat3',15),2
@@ -97,7 +97,7 @@ FROM species s JOIN cultivation_categories c ON c.id=s.category_id
 LEFT JOIN cultivation_categories p ON p.id=c.parent_id
 JOIN care_actions a ON a.code='ganti_air'
 WHERE COALESCE(p.slug,c.slug)='ikan'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_care_actions.id;
 
 INSERT INTO species_care_actions (species_id,care_action_id,slot_key,description,effect_config_json,sort_order)
 SELECT s.id,a.id,'action3','Catat pembersihan kolam.',JSON_OBJECT('stat2',40,'stat3',25),3
@@ -105,7 +105,7 @@ FROM species s JOIN cultivation_categories c ON c.id=s.category_id
 LEFT JOIN cultivation_categories p ON p.id=c.parent_id
 JOIN care_actions a ON a.code='bersihkan_kolam'
 WHERE COALESCE(p.slug,c.slug)='ikan'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_care_actions.id;
 
 INSERT INTO species_care_actions (species_id,care_action_id,slot_key,description,effect_config_json,sort_order)
 SELECT s.id,a.id,'action1','Catat pemberian pakan ayam.',JSON_OBJECT('stat1',35,'stat3',20),1
@@ -113,7 +113,7 @@ FROM species s JOIN cultivation_categories c ON c.id=s.category_id
 LEFT JOIN cultivation_categories p ON p.id=c.parent_id
 JOIN care_actions a ON a.code='beri_makan'
 WHERE COALESCE(p.slug,c.slug)='ayam'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_care_actions.id;
 
 INSERT INTO species_care_actions (species_id,care_action_id,slot_key,description,effect_config_json,sort_order)
 SELECT s.id,a.id,'action2','Catat pengisian air minum ayam.',JSON_OBJECT('stat3',20,'stat1',10),2
@@ -121,7 +121,7 @@ FROM species s JOIN cultivation_categories c ON c.id=s.category_id
 LEFT JOIN cultivation_categories p ON p.id=c.parent_id
 JOIN care_actions a ON a.code='beri_minum'
 WHERE COALESCE(p.slug,c.slug)='ayam'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_care_actions.id;
 
 INSERT INTO species_care_actions (species_id,care_action_id,slot_key,description,effect_config_json,sort_order)
 SELECT s.id,a.id,'action3','Catat pembersihan kandang.',JSON_OBJECT('stat2',35,'stat3',25),3
@@ -129,7 +129,7 @@ FROM species s JOIN cultivation_categories c ON c.id=s.category_id
 LEFT JOIN cultivation_categories p ON p.id=c.parent_id
 JOIN care_actions a ON a.code='bersihkan_kandang'
 WHERE COALESCE(p.slug,c.slug)='ayam'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_care_actions.id;
 
 -- F. Referensi aset publik yang SUDAH ada di public/assets/generated/
 -- size_bytes=0 bermakna belum dihitung; bukan ukuran file asli.
@@ -146,67 +146,67 @@ INSERT INTO media_assets (storage_path,original_name,mime_type,size_bytes,alt_te
   ('/assets/generated/nila.webp','nila.webp','image/webp',0,'Ilustrasi nila'),
   ('/assets/generated/ikan-mas.webp','ikan-mas.webp','image/webp',0,'Ilustrasi mas'),
   ('/assets/generated/ayam-petelur.webp','ayam-petelur.webp','image/webp',0,'Ilustrasi petelur')
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=media_assets.id;
 
 INSERT INTO species_media (species_id,media_asset_id,state_key,sort_order)
 SELECT s.id,m.id,'normal',0 FROM species s JOIN media_assets m ON m.storage_path='/assets/generated/sorgum.webp'
 WHERE s.slug='sorgum'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_media.id;
 
 INSERT INTO species_media (species_id,media_asset_id,state_key,sort_order)
 SELECT s.id,m.id,'wilted',0 FROM species s JOIN media_assets m ON m.storage_path='/assets/generated/sorgum-wilted.webp'
 WHERE s.slug='sorgum'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_media.id;
 
 INSERT INTO species_media (species_id,media_asset_id,state_key,sort_order)
 SELECT s.id,m.id,'normal',0 FROM species s JOIN media_assets m ON m.storage_path='/assets/generated/kangkung.webp'
 WHERE s.slug='kangkung'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_media.id;
 
 INSERT INTO species_media (species_id,media_asset_id,state_key,sort_order)
 SELECT s.id,m.id,'normal',0 FROM species s JOIN media_assets m ON m.storage_path='/assets/generated/sawi.webp'
 WHERE s.slug='sawi'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_media.id;
 
 INSERT INTO species_media (species_id,media_asset_id,state_key,sort_order)
 SELECT s.id,m.id,'normal',0 FROM species s JOIN media_assets m ON m.storage_path='/assets/generated/selada.webp'
 WHERE s.slug='selada'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_media.id;
 
 INSERT INTO species_media (species_id,media_asset_id,state_key,sort_order)
 SELECT s.id,m.id,'normal',0 FROM species s JOIN media_assets m ON m.storage_path='/assets/generated/melon.webp'
 WHERE s.slug='melon'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_media.id;
 
 INSERT INTO species_media (species_id,media_asset_id,state_key,sort_order)
 SELECT s.id,m.id,'normal',0 FROM species s JOIN media_assets m ON m.storage_path='/assets/generated/semangka.webp'
 WHERE s.slug='semangka'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_media.id;
 
 INSERT INTO species_media (species_id,media_asset_id,state_key,sort_order)
 SELECT s.id,m.id,'normal',0 FROM species s JOIN media_assets m ON m.storage_path='/assets/generated/cabai.webp'
 WHERE s.slug='cabai'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_media.id;
 
 INSERT INTO species_media (species_id,media_asset_id,state_key,sort_order)
 SELECT s.id,m.id,'normal',0 FROM species s JOIN media_assets m ON m.storage_path='/assets/generated/lele.webp'
 WHERE s.slug='lele'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_media.id;
 
 INSERT INTO species_media (species_id,media_asset_id,state_key,sort_order)
 SELECT s.id,m.id,'normal',0 FROM species s JOIN media_assets m ON m.storage_path='/assets/generated/nila.webp'
 WHERE s.slug='nila'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_media.id;
 
 INSERT INTO species_media (species_id,media_asset_id,state_key,sort_order)
 SELECT s.id,m.id,'normal',0 FROM species s JOIN media_assets m ON m.storage_path='/assets/generated/ikan-mas.webp'
 WHERE s.slug='mas'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_media.id;
 
 INSERT INTO species_media (species_id,media_asset_id,state_key,sort_order)
 SELECT s.id,m.id,'normal',0 FROM species s JOIN media_assets m ON m.storage_path='/assets/generated/ayam-petelur.webp'
 WHERE s.slug='petelur'
-ON DUPLICATE KEY UPDATE id=id;
+ON DUPLICATE KEY UPDATE id=species_media.id;
 
 -- G. Konfigurasi publik non-rahasia (RAG/vision/cuaca belum aktif)
 INSERT INTO app_settings (setting_key,value_json,description,is_public) VALUES
