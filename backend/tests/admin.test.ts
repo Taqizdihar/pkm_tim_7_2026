@@ -30,11 +30,11 @@ function fixture(respond:(sql:string,params:any[])=>any = ()=>undefined) {
 }
 
 test('CLI creates user + discovered role atomically with Argon2id and rejects duplicate emails',async()=>{
-  const db=fixture();await provisioning(db.pool).create('Developer',' Test@Example.test ','Secure-Password123!');
+  const db=fixture();await provisioning(db.pool).create('Developer',' Test@Example.test ','abcdef');
   assert.equal(db.commits,1);
   const user=db.calls.find(c=>c.sql.startsWith('INSERT INTO users'))!;
   assert.equal(user.params[1],'test@example.test');assert.match(user.params[2],/^\$argon2id\$/);
-  assert.equal(await argon2.verify(user.params[2],'Secure-Password123!'),true);
+  assert.equal(await argon2.verify(user.params[2],'abcdef'),true);
   assert.deepEqual(db.calls.find(c=>c.sql.startsWith('INSERT INTO user_roles'))!.params,[101,'23']);
   const duplicate=fixture(sql=>sql==='SELECT id FROM users WHERE email=?'?[{id:'9'}]:undefined);
   await assert.rejects(provisioning(duplicate.pool).create('Developer','test@example.test','Secure-Password123!'),/Email sudah/);
@@ -43,14 +43,17 @@ test('CLI creates user + discovered role atomically with Argon2id and rejects du
   await assert.rejects(provisioning(failed.pool).create('Developer','test@example.test','Secure-Password123!'));
   assert.equal(failed.rollbacks,1);assert.equal(failed.commits,0);
   assert.equal(passwordSchema.safeParse('short').success,false);
+  for (const password of ['abcdef','ABCDEF','123456','!!!!!!']) assert.equal(passwordSchema.safeParse(password).success,true);
+  assert.equal(passwordSchema.safeParse('a'.repeat(128)).success,true);
+  assert.equal(passwordSchema.safeParse('a'.repeat(129)).success,false);
 });
 
 test('CLI password reset and disable revoke sessions; non-admin and last admin are protected',async()=>{
   const answer=(sql:string)=>sql.includes('WHERE r.code=\'admin\' AND u.email=')?[{id:'11',status:'active'}]:sql.includes("ur.role_id=? AND u.status='active'")?[{id:'11'},{id:'12'}]:undefined;
-  const db=fixture(answer);await provisioning(db.pool).reset('test@example.test','New-SecurePassword123!');
+  const db=fixture(answer);await provisioning(db.pool).reset('test@example.test','123456');
   assert.ok(db.calls.some(c=>c.sql.startsWith('UPDATE admin_sessions')&&c.params[0]==='11'));
   const password=db.calls.find(c=>c.sql.startsWith('UPDATE users SET password_hash'))!.params[0];
-  assert.equal(await argon2.verify(password,'New-SecurePassword123!'),true);
+  assert.equal(await argon2.verify(password,'123456'),true);
   await provisioning(db.pool).disable('test@example.test');
   assert.ok(db.calls.some(c=>c.sql.includes("status='disabled'")));
   const last=fixture(sql=>sql.includes("ur.role_id=? AND u.status='active'")?[{id:'11'}]:answer(sql));

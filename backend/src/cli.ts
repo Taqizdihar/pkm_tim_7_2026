@@ -16,8 +16,8 @@ try {
       if (await confirm({ message: `Nonaktifkan ${email} dan cabut semua sesinya?`, default: false })) await admins.disable(email);
       else console.log('Dibatalkan.');
     } else if (command === 'create' || command === 'reset-password') {
-      const value = await password({ message: 'Kata sandi (12+ karakter, huruf besar/kecil, angka, simbol):', mask: '*' });
-      if (!passwordSchema.safeParse(value).success) throw Error('Kata sandi tidak memenuhi kebijakan.');
+      const value = await password({ message: 'Kata sandi (6–128 karakter):', mask: '*' });
+      if (!passwordSchema.safeParse(value).success) throw Error('Kata sandi harus terdiri dari 6–128 karakter.');
       const repeat = await password({ message: 'Ulangi kata sandi:', mask: '*' });
       if (value !== repeat) throw Error('Konfirmasi kata sandi tidak sama.');
       if (command === 'create') await admins.create(name,email,value); else await admins.reset(email,value);

@@ -2,7 +2,7 @@ import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql
 import { z } from 'zod';
 import { hashPassword } from '../auth/service.js';
 
-export const passwordSchema = z.string().min(12).max(128).regex(/[a-z]/).regex(/[A-Z]/).regex(/[0-9]/).regex(/[^a-zA-Z0-9]/);
+export const passwordSchema = z.string().min(6).max(128);
 export const emailSchema = z.string().trim().toLowerCase().email().max(191);
 export async function transaction<T>(pool: Pool, action: (connection: PoolConnection) => Promise<T>): Promise<T> {
   const connection = await pool.getConnection();

@@ -23,7 +23,7 @@ Express 5 + TypeScript extends the existing MySQL database. Authentication uses 
    npm run admin:list
    ```
 
-   Enter a name, email, and password twice. Password input is masked. Use at least 12 characters including uppercase, lowercase, digits, and a symbol. Credentials are never passed as command arguments. Duplicate emails are rejected without changing existing roles. Creation discovers the `admin` role by code and inserts the user and role atomically. `email_verified_at` remains NULL: this is internal developer provisioning, not email verification.
+   Enter a name, email, and password twice. Password input is masked. Use 6–128 characters; uppercase letters, lowercase letters, digits, and symbols are optional. This policy also applies to password resets. Credentials are never passed as command arguments. Duplicate emails are rejected without changing existing roles. Creation discovers the `admin` role by code and inserts the user and role atomically. `email_verified_at` remains NULL: this is internal developer provisioning, not email verification.
 5. Start the API:
 
    ```powershell
