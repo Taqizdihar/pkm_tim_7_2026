@@ -21,6 +21,7 @@ export default function AdminApp() {
   const [error,setError] = useState('');
   const path = window.location.pathname.replace(/\/$/,'') || '/admin';
   useEffect(() => {
+    document.title = 'Dewi Sri - Admin';
     api('/auth/me').then(value => {
       setUser(value);
       if (path === '/admin/login') window.location.replace('/admin');
