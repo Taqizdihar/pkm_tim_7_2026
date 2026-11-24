@@ -3,7 +3,7 @@ export type PetType = 'tunas' | 'koki' | 'kuning';
 export type PlantVariety = 'sorgum' | 'kangkung' | 'sawi' | 'selada' | 'melon' | 'semangka' | 'cabai';
 export type FishVariety = 'lele' | 'nila' | 'mas';
 export type ChickenVariety = 'petelur';
-export type PetVariety = PlantVariety | FishVariety | ChickenVariety;
+export type PetVariety = string;
 
 export interface PetState {
   type: PetType;

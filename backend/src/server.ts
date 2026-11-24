@@ -7,6 +7,7 @@ const env = loadEnv();
 const pool = createDatabase(env);
 const app = createApp({
   frontendOrigin: env.FRONTEND_ORIGIN,
+  pool, uploadRoot: env.UPLOAD_DIR, secureCookies: env.NODE_ENV === 'production', sessionHours: env.SESSION_HOURS,
   checkDatabase: () => checkDatabase(pool, env.DB_NAME),
   catalog: createCatalogRepository(pool),
 });

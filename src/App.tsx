@@ -91,7 +91,8 @@ export default function App() {
     playPop(userProfile.soundEnabled);
   };
   const recordCare = (type: PetType, variety: PetVariety, slot: CareSlot) => {
-    const { updatedPet } = performCareAction(getSpeciesPet(speciesPets, type, variety), slot);
+    const { updatedPet, xpGained } = performCareAction(getSpeciesPet(speciesPets, type, variety), slot);
+    if (!xpGained) return;
     const record = createCareRecord(type, variety, slot);
     const today = getJakartaDateKey();
     setSpeciesPets((previous) => ({ ...previous, [variety]: updatedPet }));

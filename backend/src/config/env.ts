@@ -11,6 +11,8 @@ const schema = z.object({
   DB_PASSWORD: z.string(),
   DB_NAME: z.string().min(1),
   FRONTEND_ORIGIN: z.string().url(),
+  SESSION_HOURS: z.coerce.number().int().min(1).max(24).default(8),
+  UPLOAD_DIR: z.string().min(1).default('storage/uploads'),
 });
 
 export type Env = z.infer<typeof schema>;

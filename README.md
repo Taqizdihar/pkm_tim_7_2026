@@ -1,10 +1,18 @@
 # Dewi Sri
 
-## Backend lokal
+## Backend dan CMS internal
 
-API Node.js/Express kini tersedia di [`backend/`](backend/README.md). Jalankan MySQL Laragon dengan database `dewi_sri` yang sudah ada, lalu dari direktori `backend` jalankan `npm install`, sesuaikan `.env` dengan kredensial lokal, dan jalankan `npm run dev`. API berjalan di `127.0.0.1:3001`; frontend tetap dijalankan terpisah di port 3000. Periksa `GET /api/v1/health/database` untuk koneksi nyata dan `GET /api/v1/species/sorgum` untuk katalog. Backend hanya membaca tabel yang ada; tidak menjalankan skrip SQL atau migrasi otomatis.
+Backend Express/TypeScript tersedia di [`backend/`](backend/README.md), dengan autentikasi administrator melalui cookie HttpOnly, hash Argon2id, sesi MySQL, validasi Zod, CSRF, dan audit perubahan. CMS React tersedia di `/admin/login` dan `/admin`; navigasi aplikasi KWT tetap memakai `?screen=beranda` dan halaman yang sudah ada.
 
-Frontend React dan TypeScript untuk merawat tanaman, ikan, dan ayam. Aplikasi berjalan secara lokal di browser; tidak membutuhkan kata sandi atau kunci API.
+**Langkah manual baru:** jalankan [`docs/database/03_admin_sessions.sql`](docs/database/03_admin_sessions.sql) melalui phpMyAdmin > `dewi_sri` > tab SQL. Skrip ini hanya menambahkan tabel sesi sebagai pelengkap 19 tabel awal. Aplikasi tidak menjalankan DDL/seed otomatis dan tidak membuat akun administrator otomatis.
+
+Dari `backend`, jalankan `npm install`, sesuaikan `.env` lokal yang sudah ada, lalu `npm run admin:create` untuk membuat akun melalui terminal dan `npm run dev` untuk API di port 3001. Jalankan `npm install` dan `npm run dev` dari root dalam terminal lain untuk frontend di port 3000. Gunakan **http://localhost:3000/admin/login** untuk masuk. Perintah pengelolaan lain: `npm run admin:list`, `npm run admin:reset-password`, dan `npm run admin:disable`.
+
+Katalog publik memuat kategori, Pet terbit, ilustrasi, tindakan, dan panduan dari MySQL melalui `/api/v1/catalog`. Jenis baru dapat muncul tanpa perubahan konstanta TypeScript. LocalStorage tetap menyimpan profil dan aktivitas pengguna; katalog tersimpan menjadi fallback dengan pemberitahuan jika backend tidak tersedia. Ilustrasi bawaan tetap di `public/assets/generated`; unggahan CMS berada di `backend/storage/uploads` yang tidak ikut Git dan memerlukan penyimpanan persisten saat hosting.
+
+Panduan langkah awal, API, CLI, keamanan, dan hosting tersedia di [backend/README.md](backend/README.md). Hasil pengujian dan batas verifikasi langsung tercatat di [docs/cms-verification.md](docs/cms-verification.md).
+
+Frontend React dan TypeScript untuk merawat tanaman, ikan, dan ayam. Profil dan aktivitas pengguna tetap berjalan lokal di browser; katalog dimuat dari API dengan fallback tersimpan. Kata sandi administrator hanya digunakan untuk CMS internal.
 
 ## Menjalankan
 
@@ -61,7 +69,7 @@ Hasil pemeriksaan frontend dan alur yang diperiksa tercatat di [docs/frontend-ve
 
 ## Rancangan backend dan database MySQL (tahap pengembangan)
 
-> **Status:** API backend baca-saja untuk kesehatan dan katalog sudah tersedia di `backend/`. CMS dan integrasi frontend masih direncanakan. Frontend di atas masih menggunakan data TypeScript statis dan `localStorage`. Menambah Pet melalui database baru akan tampil di React setelah katalog dinamis diintegrasikan.
+> **Status:** API katalog publik, CMS internal, autentikasi administrator, dan katalog dinamis frontend sudah diimplementasikan. Tabel sesi perlu ditambahkan secara manual menggunakan skrip 03. Profil dan aktivitas KWT tetap memakai `localStorage`.
 
 Tujuan desain: anggota KWT Dewi Sri dapat mencatat budidaya dan riwayatnya; admin pengembang dapat menambah kategori/jenis (misalnya **Ayam Jantan**), mengganti gambar sesuai kondisi, mengelola tindakan dan panduan; integrasi Tanya Tani nantinya melalui backend ke layanan RAG. API key dan password **tidak** disimpan dalam repository atau pengaturan publik.
 
@@ -152,5 +160,5 @@ Satu anggota dapat membuat **lebih dari satu `user_cultivations`** untuk jenis y
 - `species_care_actions.species_id` harus sesuai dengan `user_cultivations.species_id` pada jadwal/jurnal; **backend wajib memvalidasi kesesuaian tersebut** karena foreign key masing-masing saja belum menjamin keduanya sejenis.
 - Seluruh kunci rahasia RAG/cuaca disimpan di **environment server Node.js** (misalnya `.env` yang di-`gitignore`), bukan di `app_settings`, `VITE_*`, atau browser.
 - Metadata gambar disimpan di `media_assets`, sedangkan file fisiknya di penyimpanan server. Aset katalog bersifat publik; foto konsultasi pribadi harus mempunyai kontrol akses.
-- Data lama `localStorage` perlu direncanakan migrasinya setelah API siap; jangan langsung menghapus data browser. Pengisian akun admin dan autentikasi server masih perlu diimplementasikan, **tidak ada password atau akun admin dummy di seed**.
-- Perubahan jenis Pet yang dikelola melalui CMS baru benar-benar dinamis setelah `src/types/index.ts`, `src/data/species.ts`, `src/data/care.ts`, `src/utils/petRules.ts`, serta pemanggilan state/frontend lainnya direfaktor untuk membaca API.
+- Data lama `localStorage` perlu direncanakan migrasinya setelah API siap; jangan langsung menghapus data browser. Akun administrator diprovisi melalui CLI; **tidak ada password atau akun admin dummy di seed**.
+- Perubahan jenis Pet dari CMS kini dibaca oleh katalog dinamis. Slug menjadi identitas progres lokal; pertahankan slug setelah publikasi. Pet yang diarsipkan tidak ditawarkan untuk pilihan baru, sementara riwayat dan referensi tetap disimpan.

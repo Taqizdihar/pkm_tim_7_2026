@@ -358,9 +358,9 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
           <label htmlFor="photo-species">Jenis tanaman atau hewan</label>
           <select id="photo-species" ref={speciesRef} value={photoSpecies} onChange={(event) => { const value = event.target.value as PetVariety | ''; setPhotoSpecies(value); setPhotoIntent(value && getSpeciesType(value) === 'tunas' ? 'yellow' : 'care'); setPhotoError(''); }} required>
             <option value="">Pilih jenis</option>
-            <optgroup label="Tanaman">{SPECIES.tunas.map((species) => <option key={species.id} value={species.id}>{species.label}</option>)}</optgroup>
-            <optgroup label="Ikan">{SPECIES.koki.map((species) => <option key={species.id} value={species.id}>{species.label}</option>)}</optgroup>
-            <optgroup label="Ayam">{SPECIES.kuning.map((species) => <option key={species.id} value={species.id}>{species.label}</option>)}</optgroup>
+            <optgroup label="Tanaman">{SPECIES.tunas.filter(s => s.available !== false).map((species) => <option key={species.id} value={species.id}>{species.label}</option>)}</optgroup>
+            <optgroup label="Ikan">{SPECIES.koki.filter(s => s.available !== false).map((species) => <option key={species.id} value={species.id}>{species.label}</option>)}</optgroup>
+            <optgroup label="Ayam">{SPECIES.kuning.filter(s => s.available !== false).map((species) => <option key={species.id} value={species.id}>{species.label}</option>)}</optgroup>
           </select>
           {selectedIsPlant && <fieldset className="consultation-photo-needs"><legend>Apa yang ingin diketahui?</legend>{([{ value: 'yellow', label: 'Daun menguning' }, { value: 'grow', label: 'Cara budidaya' }, { value: 'care', label: 'Perawatan harian' }] as const).map((option) => <label key={option.value}><input type="radio" name="photo-intent" value={option.value} checked={photoIntent === option.value} onChange={() => setPhotoIntent(option.value)} /><span>{option.label}</span></label>)}</fieldset>}
           <label htmlFor="photo-description">Ceritakan kondisinya <span>(opsional)</span></label>

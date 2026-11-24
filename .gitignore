@@ -8,3 +8,7 @@ coverage/
 *.log
 .env*
 !.env.example
+
+backend/storage/
+playwright-report/
+test-results/

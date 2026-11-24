@@ -1,6 +1,7 @@
 import {createRoot} from 'react-dom/client';
-import App from './App.tsx';
+import CatalogApp from './CatalogApp.tsx';
+import AdminApp from './admin/AdminApp.tsx';
 import './index.css';
 import './garden.css';
 
-createRoot(document.getElementById('root')!).render(<App />);
+createRoot(document.getElementById('root')!).render(window.location.pathname.startsWith('/admin') ? <AdminApp /> : <CatalogApp />);

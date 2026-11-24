@@ -26,25 +26,23 @@ export interface Guide extends RowDataPacket {
 export function createCatalogRepository(pool: Pool) {
   return {
     async categories(): Promise<Category[]> {
-      const [rows] = await pool.execute<Category[]>(`SELECT c.id, c.parent_id AS parentId,
+      const [rows] = await pool.execute<Category[]>(`${activeTree} SELECT c.id, c.parent_id AS parentId,
         c.name, c.slug, c.habitat_key AS habitatKey, c.sort_order AS sortOrder
         FROM cultivation_categories c
         LEFT JOIN cultivation_categories p ON p.id = c.parent_id
-        WHERE c.is_active = 1 AND (c.parent_id IS NULL OR p.is_active = 1)
+        WHERE c.id IN (SELECT id FROM active_categories)
         ORDER BY c.sort_order, c.id`);
       return rows;
     },
     async species(): Promise<Species[]> {
-      const [rows] = await pool.execute<Species[]>(`${speciesSelect}
-        WHERE s.status = 'published' AND c.is_active = 1
-        AND (c.parent_id IS NULL OR p.is_active = 1)
+      const [rows] = await pool.execute<Species[]>(`${activeTree} ${speciesSelect}
+        WHERE s.status = 'published' AND c.id IN (SELECT id FROM active_categories)
         ORDER BY s.sort_order, s.id`);
       return rows;
     },
     async speciesBySlug(slug: string): Promise<Species | null> {
-      const [rows] = await pool.execute<Species[]>(`${speciesSelect}
-        WHERE s.slug = ? AND s.status = 'published' AND c.is_active = 1
-        AND (c.parent_id IS NULL OR p.is_active = 1) LIMIT 1`, [slug]);
+      const [rows] = await pool.execute<Species[]>(`${activeTree} ${speciesSelect}
+        WHERE s.slug = ? AND s.status = 'published' AND c.id IN (SELECT id FROM active_categories) LIMIT 1`, [slug]);
       return rows[0] ?? null;
     },
     async media(speciesId: string): Promise<Media[]> {
@@ -59,7 +57,7 @@ export function createCatalogRepository(pool: Pool) {
     async careActions(speciesId: string): Promise<CareAction[]> {
       const [rows] = await pool.execute<CareAction[]>(`SELECT ca.id, ca.code, ca.name,
         ca.description, ca.icon_key AS iconKey, sca.slot_key AS slotKey,
-        sca.description AS speciesDescription, sca.sort_order AS sortOrder
+        sca.description AS speciesDescription, sca.effect_config_json AS effects, sca.sort_order AS sortOrder
         FROM species_care_actions sca JOIN care_actions ca ON ca.id = sca.care_action_id
         WHERE sca.species_id = ? AND sca.is_active = 1 AND ca.is_active = 1
         ORDER BY sca.sort_order, sca.id`, [speciesId]);
@@ -83,3 +81,8 @@ const speciesSelect = `SELECT s.id, s.name, s.slug, s.scientific_name AS scienti
   LEFT JOIN cultivation_categories p ON p.id = c.parent_id`;
 
 export type CatalogRepository = ReturnType<typeof createCatalogRepository>;
+
+const activeTree = `WITH RECURSIVE active_categories AS (
+  SELECT id FROM cultivation_categories WHERE parent_id IS NULL AND is_active=1
+  UNION ALL SELECT c.id FROM cultivation_categories c JOIN active_categories p ON c.parent_id=p.id WHERE c.is_active=1
+)`;

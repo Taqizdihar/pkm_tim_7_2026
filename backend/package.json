@@ -8,19 +8,31 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts",
+    "admin:create": "tsx src/cli.ts create",
+    "admin:list": "tsx src/cli.ts list",
+    "admin:reset-password": "tsx src/cli.ts reset-password",
+    "admin:disable": "tsx src/cli.ts disable"
   },
   "dependencies": {
+    "@inquirer/prompts": "^8.8.1",
+    "argon2": "^0.45.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^18.0.10",
     "express": "^5.3.0",
+    "express-rate-limit": "^8.7.5",
     "helmet": "^8.3.0",
+    "multer": "^2.5.0",
     "mysql2": "^3.24.6",
+    "sharp": "^0.35.5",
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/multer": "^2.3.0",
     "@types/node": "^26.6.6",
     "@types/supertest": "^7.2.1",
     "supertest": "^7.3.2",

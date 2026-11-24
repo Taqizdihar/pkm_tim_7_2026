@@ -1,3 +1,4 @@
+import { getCareActions } from '../data/care.ts';
 import type { PetState, PetType, ChatConversation } from '../types/index.ts';
 import { getSpecies } from '../data/species.ts';
 
@@ -66,6 +67,16 @@ export function performCareAction(
   pet: PetState,
   actionSlot: 'action1' | 'action2' | 'action3'
 ): { updatedPet: PetState; xpGained: number; feedbackText: string } {
+  const configured = getSpecies(pet.type, pet.variety).careActions;
+  if (configured) {
+    const action = getCareActions(pet.type, pet.variety).find(item => item.slot === actionSlot);
+    if (!action) return { updatedPet: pet, xpGained: 0, feedbackText: 'Tindakan ini sudah tidak tersedia.' };
+    const updated = { ...pet };
+    for (const key of ['stat1','stat2','stat3'] as const) updated[key] = Math.min(100, updated[key] + (action.effects?.[key] ?? 0));
+    updated.speech = `${action.label} tercatat. ${action.description}`;
+    updated.isHungryOrThirsty = calculateMood(updated) === 'sad';
+    return { updatedPet: updated, xpGained: 1, feedbackText: `${action.label} tercatat.` };
+  }
   const updated: PetState = { ...pet };
   let feedbackText = '';
 

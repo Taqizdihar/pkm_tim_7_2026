@@ -1,3 +1,4 @@
+import type { CareAction } from './care.ts';
 import type { PetState, PetType, PetVariety } from '../types/index.ts';
 
 export interface Species {
@@ -6,6 +7,9 @@ export interface Species {
   image: string;
   wiltedImage?: string;
   note: string;
+  available?: boolean;
+  careActions?: CareAction[];
+  guides?: { title: string; bodyText: string }[];
   group: 'sayuran' | 'buah' | 'bijian' | 'ikan' | 'unggas';
 }
 
