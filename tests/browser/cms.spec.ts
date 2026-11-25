@@ -41,7 +41,7 @@ for(const width of [320,390,768,1440])test(`CMS responsive navigation and forms 
   for(const path of ['/admin','/admin/categories','/admin/care-actions','/admin/guides','/admin/settings','/admin/pets']){
     await page.goto(path);await expect(page.locator('main h1')).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-    if(path==='/admin/pets'){await page.getByRole('button',{name:'Tambah',exact:true}).click();await expect(page.getByRole('heading',{name:'Tambah Pet',exact:true})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
+    if(path==='/admin/pets'){await page.getByRole('button',{name:'Tambah Pet',exact:true}).click();await expect(page.getByRole('heading',{name:'Tambah Pet',exact:true})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
   }
   await page.screenshot({path:`.artifacts/cms-${width}.png`,fullPage:true});
 });
@@ -49,10 +49,10 @@ for(const width of [320,390,768,1440])test(`CMS responsive navigation and forms 
 test('CMS publish workflow appears in the public app and archive keeps journal data',async({page})=>{
   test.setTimeout(90000);
   await fixture(page);await page.setViewportSize({width:390,height:844});await login(page);
-  await page.goto('/admin/pets');await page.getByRole('button',{name:'Tambah',exact:true}).click();
+  await page.goto('/admin/pets');await page.getByRole('button',{name:'Tambah Pet',exact:true}).click();
   await page.getByLabel('Nama',{exact:true}).fill('Ayam Jantan');await page.getByLabel('Slug',{exact:true}).fill('ayam-jantan');await page.getByRole('combobox',{name:'Kategori',exact:true}).selectOption('3');
   await page.getByRole('button',{name:'Simpan',exact:true}).click();await expect(page.getByRole('heading',{name:'Ilustrasi Pet'})).toBeVisible();
-  await page.getByLabel('Gambar (maksimal 5 MB)').setInputFiles('public/assets/generated/ayam-petelur.png');await page.getByRole('button',{name:'Unggah ilustrasi'}).click();
+  await page.getByLabel('Gambar (maksimal 5 MB)').setInputFiles('public/assets/generated/ayam-petelur.png');await expect(page.getByAltText('Pratinjau ilustrasi yang dipilih')).toBeVisible();await page.getByRole('button',{name:'Unggah ilustrasi'}).click();
   await expect(page.getByText('Ilustrasi tersimpan.',{exact:true})).toBeVisible();
   for(let i=0;i<3;i++)await page.locator('fieldset').nth(i).getByRole('combobox').selectOption(String(i+1));
   await page.getByRole('button',{name:'Simpan tindakan'}).click();await expect(page.getByText('Tindakan tersimpan.',{exact:true})).toBeVisible();
@@ -71,17 +71,32 @@ test('CMS publish workflow appears in the public app and archive keeps journal d
 test('category, care action, guide and settings forms submit and logout returns to login',async({page})=>{
   test.setTimeout(90000);
   await fixture(page);await page.setViewportSize({width:320,height:844});await login(page);
-  await page.goto('/admin/categories');await page.getByRole('button',{name:'Tambah',exact:true}).click();
+  await page.goto('/admin/categories');await page.getByRole('button',{name:'Tambah kategori',exact:true}).click();
   await page.getByLabel('Nama',{exact:true}).fill('Kebun tambahan');await page.getByLabel('Slug',{exact:true}).fill('kebun-tambahan');
   await page.getByRole('combobox',{name:'Habitat',exact:true}).selectOption('kebun');await page.getByRole('button',{name:'Simpan',exact:true}).click();
   await expect(page.getByText('Perubahan tersimpan.',{exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Edit Kebun tambahan',exact:true})).toBeVisible();
-  await page.goto('/admin/care-actions');await page.getByRole('button',{name:'Tambah',exact:true}).click();
+  await page.goto('/admin/care-actions');await page.getByRole('button',{name:'Tambah tindakan',exact:true}).click();
   await page.getByLabel('Nama',{exact:true}).fill('Periksa tanah');await page.getByLabel('Kode',{exact:true}).fill('periksa_tanah');await page.getByRole('button',{name:'Simpan',exact:true}).click();await expect(page.getByRole('button',{name:'Edit Periksa tanah',exact:true})).toBeVisible();
-  await page.goto('/admin/pets');await page.getByRole('button',{name:'Tambah',exact:true}).click();
+  await page.goto('/admin/pets');await page.getByRole('button',{name:'Tambah Pet',exact:true}).click();
   await page.getByLabel('Nama',{exact:true}).fill('Pet panduan');await page.getByLabel('Slug',{exact:true}).fill('pet-panduan');await page.getByRole('combobox',{name:'Kategori',exact:true}).selectOption('3');await page.getByRole('button',{name:'Simpan',exact:true}).click();await expect(page.getByRole('heading',{name:'Ilustrasi Pet'})).toBeVisible();
-  await page.goto('/admin/guides');await page.getByRole('button',{name:'Tambah',exact:true}).click();
+  await page.goto('/admin/guides');await page.getByRole('button',{name:'Tambah panduan',exact:true}).click();
   await page.getByRole('combobox',{name:'Pet',exact:true}).selectOption('101');await page.getByLabel('Judul',{exact:true}).fill('Panduan pertama');await page.getByLabel('Isi panduan',{exact:true}).fill('Periksa kandang setiap pagi.');await page.getByRole('combobox',{name:'Status',exact:true}).selectOption('published');await page.getByRole('button',{name:'Simpan',exact:true}).click();await expect(page.getByRole('button',{name:'Edit Panduan pertama',exact:true})).toBeVisible();
   await page.goto('/admin/settings');await page.getByLabel('Pesan sambutan',{exact:true}).fill('Selamat datang di kebun.');await page.getByRole('button',{name:'Simpan pengaturan'}).click();await expect(page.getByText('Pengaturan tersimpan.',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Buka menu administrasi'}).click();
   await page.getByRole('button',{name:'Keluar',exact:true}).click();await expect(page.getByRole('heading',{name:'Masuk administrator'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
+
+test('CMS mobile menu is keyboard operable and restores focus',async({page})=>{
+  await fixture(page);await page.setViewportSize({width:390,height:844});await login(page);
+  await page.getByRole('link',{name:'Tambah Pet'}).click();
+  await expect(page.getByRole('heading',{name:'Tambah Pet',exact:true})).toBeVisible();
+  await page.goto('/admin');
+  const toggle=page.getByRole('button',{name:'Buka menu administrasi'});
+  await toggle.focus();await page.keyboard.press('Enter');
+  await expect(page.locator('#admin-navigation')).toBeVisible();
+  await expect(page.locator('#admin-navigation a').first()).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#admin-navigation')).toBeHidden();
+  await expect(toggle).toBeFocused();
 });

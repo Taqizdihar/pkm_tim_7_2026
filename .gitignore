@@ -11,4 +11,5 @@ coverage/
 
 backend/storage/
 playwright-report/
+.playwright-mcp/
 test-results/

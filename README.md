@@ -65,6 +65,8 @@ Progres dan jadwal disimpan per ID spesies. Format lama berdasarkan kategori tet
 
 Hasil pemeriksaan frontend dan alur yang diperiksa tercatat di [docs/frontend-verification.md](docs/frontend-verification.md).
 
+Arsitektur responsif aplikasi anggota dan CMS, matriks ukuran layar, hasil uji browser, serta batas pemeriksaan terbaru tercatat di [docs/responsive-ui-verification.md](docs/responsive-ui-verification.md).
+
 ---
 
 ## Rancangan backend dan database MySQL (tahap pengembangan)

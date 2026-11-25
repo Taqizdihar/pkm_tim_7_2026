@@ -600,7 +600,7 @@
   bottom: calc(var(--app-nav-height, 80px) + env(safe-area-inset-bottom, 0px) + 10px);
   left: 50%;
   width: calc(100% - 24px);
-  max-width: calc(var(--app-shell-width, 560px) - 24px);
+  max-width: min(720px, calc(100% - 24px));
   padding: 10px 11px 11px;
   transform: translateX(-50%);
   border: 1px solid #d9ddcf;

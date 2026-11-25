@@ -21,6 +21,15 @@ Hangat, telaten, optimistis, dan akrab dengan keseharian tani Indonesia. Humor d
 
 Gunakan sans-serif bulat yang sudah tersedia di proyek, dengan bobot tegas untuk judul dan ukuran nyaman untuk isi. Aplikasi mengutamakan alur satu tangan di ponsel: navigasi bawah tetap mudah dijangkau, area sentuh lega, dan isi tidak tertutup bilah tetap. Pada layar lebar, pertahankan lebar baca yang terukur.
 
+### Tata letak adaptif
+
+- Di bawah 768 px, layar anggota memakai alur satu kolom dan navigasi bawah selebar ruang yang tersedia, termasuk ponsel lanskap.
+- Mulai 768 px, Beranda, perjalanan tani, riwayat konsultasi, dan formulir yang sesuai memakai kolom tambahan. Isi percakapan dan daftar panjang tetap memiliki lebar baca terukur.
+- Mulai 1024 px, navigasi utama berpindah menjadi sidebar tetap. Beranda menempatkan spesies sebagai fokus di kolom utama, dengan jadwal dan progres di kolom pendamping. Composer Tanya Tani mengikuti pusat area isi, bukan pusat seluruh viewport.
+- CMS internal memakai sidebar pada layar lebar dan menu yang dapat dibuka serta ditutup dengan keyboard pada layar hingga 860 px. Warna merek tetap sama, tetapi bidang kerja lebih tenang dan padat informasi daripada aplikasi anggota.
+
+Rincian implementasi dan hasil pemeriksaan ada di [`docs/responsive-ui-verification.md`](docs/responsive-ui-verification.md).
+
 ## Rasa gerak
 
 Gerakan singkat menegaskan aksi pengguna—merawat, memilih peliharaan, atau membuka konsultasi. Hormati `prefers-reduced-motion`; animasi dekoratif tidak boleh menghalangi isi atau kontrol.
