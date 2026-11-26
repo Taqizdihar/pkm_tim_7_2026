@@ -37,24 +37,13 @@ export function applyCatalog(catalog: Catalog, fresh = true) {
       icon: ['water','plant','sun','feed','clean'].includes(a.iconKey) ? a.iconKey as CareAction['icon'] : 'plant', effects: a.effects,
     }));
     const next: Species = { id: item.slug, label: item.name, image: image || existing?.image || SPECIES[type][0].image,
-      wiltedImage, note: item.shortNote || '', group: groups[catalog.categories.find(c => c.id === item.categoryId)?.slug || ''] || (type === 'koki' ? 'ikan' : type === 'kuning' ? 'unggas' : 'sayuran'),
+      wiltedImage, stateImages:item.media.reduce<Record<string,string>>((images,m)=>{if(safeImage(m.storagePath)&&!images[m.stateKey])images[m.stateKey]=m.storagePath;return images;},{}), note: item.shortNote || '', group: groups[catalog.categories.find(c => c.id === item.categoryId)?.slug || ''] || (type === 'koki' ? 'ikan' : type === 'kuning' ? 'unggas' : 'sayuran'),
       available: item.available !== false, careActions: actions, guides: item.guides };
     if (existing) Object.assign(existing,next); else SPECIES[type].push(next);
   }
 }
 
 export async function loadCatalog(): Promise<string> {
-  // Preserve existing progress even if its species was archived and no catalog cache survived.
-  try {
-    const stores = [JSON.parse(localStorage.getItem('dewi_sri_species_pets') || '{}'), JSON.parse(localStorage.getItem('dewi_sri_pets') || '{}')];
-    const records = JSON.parse(localStorage.getItem('dewi_sri_care_journal') || '[]');
-    const remembered = [...stores.flatMap(store => Object.entries(store).map(([key,value]) => ({ ...(value as object), key }))), ...(Array.isArray(records) ? records : [])];
-    for (const raw of remembered) {
-      const type = raw.type as PetType, slug = raw.variety || raw.key;
-      if (!['tunas','koki','kuning'].includes(type) || typeof slug !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slug.length>120) continue;
-      if (!SPECIES[type].some(s => s.id===slug)) SPECIES[type].push({ id: slug, label: typeof raw.name==='string' ? raw.name.slice(0,120) : slug, image: SPECIES[type][0].image, note: 'Jenis tersimpan', group: type==='tunas' ? 'sayuran' : type==='koki' ? 'ikan' : 'unggas', available:false });
-    }
-  } catch { /* Other storage validators report malformed user data. */ }
   try {
     const cached = localStorage.getItem(cacheKey);
     if (cached) applyCatalog(JSON.parse(cached),false);

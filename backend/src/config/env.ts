@@ -12,6 +12,7 @@ const schema = z.object({
   DB_NAME: z.string().min(1),
   FRONTEND_ORIGIN: z.string().url(),
   SESSION_HOURS: z.coerce.number().int().min(1).max(24).default(8),
+  MEMBER_SESSION_HOURS: z.coerce.number().int().min(1).max(168).default(24),
   UPLOAD_DIR: z.string().min(1).default('storage/uploads'),
 });
 

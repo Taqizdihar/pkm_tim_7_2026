@@ -10,10 +10,14 @@ import { createAuthService } from './modules/auth/service.js';
 import { adminRouter } from './modules/admin/routes.js';
 import { HttpError } from './utils/http.js';
 import type { CatalogRepository } from './modules/catalog/repository.js';
+import { createMemberAuth } from './modules/member-auth/service.js';
+import { memberAuthRouter } from './modules/member-auth/routes.js';
+import { membersRouter } from './modules/admin/members.js';
+import { memberRouter } from './modules/member/routes.js';
 
 export interface AppDependencies {
   frontendOrigin: string;
-  pool?: Pool; uploadRoot?: string; secureCookies?: boolean; sessionHours?: number;
+  pool?: Pool; uploadRoot?: string; secureCookies?: boolean; sessionHours?: number; memberSessionHours?: number;
   checkDatabase: () => Promise<void>;
   catalog: CatalogRepository;
 }
@@ -30,6 +34,15 @@ export function createApp(deps: AppDependencies) {
   if (deps.pool) {
     const auth = createAuthService(deps.pool, deps.sessionHours ?? 8);
     app.use('/api/v1/admin', authRouter(auth, deps.frontendOrigin, deps.secureCookies ?? false), adminRouter(deps.pool, deps.uploadRoot ?? 'storage/uploads'));
+    app.use('/api/v1/admin/members', membersRouter(deps.pool));
+    const memberAuth = createMemberAuth(deps.pool,deps.memberSessionHours ?? 24);
+    app.use('/api/v1',memberAuthRouter(memberAuth,deps.frontendOrigin,deps.secureCookies ?? false));
+    app.use('/api/v1/member',memberRouter(deps.pool,memberAuth,deps.uploadRoot ?? 'storage/uploads'));
+    app.get('/api/v1/health/member-schema', async (_req,res) => {
+      await deps.pool!.query('SELECT username,phone_number,must_change_password,temporary_password_expires_at,password_changed_at,created_by FROM users LIMIT 0');
+      await deps.pool!.query('SELECT token_hash,user_id,created_at,expires_at,revoked_at FROM member_sessions LIMIT 0');
+      res.json({success:true,data:{ready:true}});
+    });
     app.get('/api/v1/media/:filename', async (req,res) => {
       if (!/^[a-f0-9-]{36}\.webp$/.test(req.params.filename)) throw new HttpError(404,'Gambar tidak ditemukan.');
       const [rows] = await deps.pool!.execute<RowDataPacket[]>("SELECT id FROM media_assets WHERE storage_path=? AND visibility='public'", [`/api/v1/media/${req.params.filename}`]);
@@ -85,12 +98,15 @@ export function createApp(deps: AppDependencies) {
     const err = error as { code?: string; status?: number };
     let status = error instanceof HttpError ? error.status : error instanceof ZodError ? 422 : 500;
     let message = error instanceof HttpError ? error.message : error instanceof ZodError ? 'Masukan tidak valid. Periksa isian formulir.' : 'Layanan tidak dapat memproses permintaan.';
-    if (err.code === 'ER_DUP_ENTRY') { status=409; message='Slug, kode, atau email sudah digunakan.'; }
+    let code = error instanceof HttpError ? error.code : error instanceof ZodError ? 'VALIDATION_ERROR' : `HTTP_${status}`;
+    if (error instanceof ZodError && error.issues[0]?.code==='custom') message=error.issues[0].message;
+    if (err.code === 'ER_DUP_ENTRY') { status=409; code='IDENTIFIER_CONFLICT'; message='Nomor HP, username, email, slug, atau kode sudah digunakan.'; }
     if (err.code === 'ER_NO_REFERENCED_ROW_2' || err.code === 'ER_ROW_IS_REFERENCED_2') { status=409; message='Data masih memiliki hubungan atau referensi tidak ditemukan.'; }
-    if (err.code === 'ER_NO_SUCH_TABLE') { status=503; message='Skema belum lengkap. Jalankan skrip SQL tambahan melalui phpMyAdmin.'; }
+    if (err.code === 'ER_NO_SUCH_TABLE' || err.code === 'ER_BAD_FIELD_ERROR') { status=503; code='SCHEMA_NOT_READY'; message='Skema belum lengkap. Periksa docs/database/04_member_auth.sql melalui phpMyAdmin.'; }
+    if (['ECONNREFUSED','ETIMEDOUT','PROTOCOL_CONNECTION_LOST','ER_ACCESS_DENIED_ERROR','ER_BAD_DB_ERROR'].includes(err.code || '')) { status=503; code='DATABASE_UNAVAILABLE'; message='Database belum tersedia. Hubungi pengelola atau coba lagi nanti.'; }
     if (err.code === 'LIMIT_FILE_SIZE') { status=413; message='Ukuran gambar maksimal 5 MB.'; }
     if (error instanceof SyntaxError) { status=400; message='JSON tidak valid.'; }
-    res.status(status).json({ success: false, error: { code: `HTTP_${status}`, message } });
+    res.status(status).json({ success: false, error: { code, message } });
   });
   return app;
 }

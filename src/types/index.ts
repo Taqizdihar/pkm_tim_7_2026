@@ -6,6 +6,7 @@ export type ChickenVariety = 'petelur';
 export type PetVariety = string;
 
 export interface PetState {
+  visualState?: string;
   type: PetType;
   variety?: PetVariety;
   name: string;
@@ -30,6 +31,8 @@ export interface FarmerRank {
 }
 
 export interface UserProfile {
+  phoneNumber?: string;
+  username?: string;
   name: string;
   region: string;
   email: string;

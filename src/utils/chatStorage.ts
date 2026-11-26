@@ -39,7 +39,7 @@ function updateTime(conversation: ChatConversation): number {
 
 function safePhotoUrl(value: unknown): string | undefined {
   if (typeof value !== 'string' || value.length > MAX_PHOTO_LENGTH) return undefined;
-  return /^data:image\/(?:jpeg|png|webp|gif|avif);base64,[A-Za-z0-9+/=\r\n]+$/.test(value) || /^\/assets\/[a-zA-Z0-9/_.-]+$/.test(value)
+  return /^data:image\/(?:jpeg|png|webp|gif|avif);base64,[A-Za-z0-9+/=\r\n]+$/.test(value) || /^\/assets\/[a-zA-Z0-9/_.-]+$/.test(value) || /^\/api\/v1\/member\/media\/[a-f0-9-]{36}\.webp$/.test(value)
     ? value
     : undefined;
 }

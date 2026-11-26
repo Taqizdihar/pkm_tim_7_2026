@@ -90,6 +90,7 @@ function normalizePet(type: PetType, value: unknown, variety?: PetVariety): PetS
     stat2: percentage(stored.stat2, base.stat2),
     stat3: percentage(stored.stat3, base.stat3),
     speech: text(stored.speech, base.speech, 500),
+    ...(typeof stored.visualState==='string'?{visualState:stored.visualState}:{}),
   });
   pet.isHungryOrThirsty = calculateMood(pet) === 'sad';
   return pet;

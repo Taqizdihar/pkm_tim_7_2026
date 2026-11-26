@@ -6,6 +6,7 @@ export interface Species {
   label: string;
   image: string;
   wiltedImage?: string;
+  stateImages?: Record<string,string>;
   note: string;
   available?: boolean;
   careActions?: CareAction[];
@@ -39,6 +40,7 @@ export function getSpecies(type: PetType, variety?: PetVariety): Species {
 
 export function getSpeciesDisplayImage(pet: PetState): string {
   const species = getSpecies(pet.type, pet.variety);
+  if(pet.visualState&&species.stateImages?.[pet.visualState])return species.stateImages[pet.visualState];
   return pet.type === 'tunas' && pet.stat2 <= 25 && species.wiltedImage
     ? species.wiltedImage
     : species.image;

@@ -1,0 +1,15 @@
+.member-list {display:grid;gap:16px;}
+.member-list article {background:#fff;border:1px solid #d9e3d9;border-radius:14px;padding:22px;}
+.member-identity {display:flex;align-items:flex-start;gap:14px;}
+.member-list h2 {margin:0 0 8px;font-size:20px;}
+.member-list p {font-size:14px;margin:8px 0;}
+.member-list dl {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:20px 0;}
+.member-list dt {font-size:13px;color:#58675c;}
+.member-list dd {margin:4px 0;overflow-wrap:anywhere;}
+.member-actions {display:flex;gap:10px;flex-wrap:wrap;}
+.member-pagination {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:24px;flex-wrap:wrap;}
+.member-admin-dialog {width:min(700px,calc(100vw - 24px));max-height:calc(100dvh - 32px);padding:24px;color:#2b1704;background:#fff8f5;border:1px solid #b5c8b9;border-radius:16px;overflow-y:auto;}
+.member-dialog-heading {display:flex;align-items:flex-start;gap:16px;justify-content:space-between;}
+.member-dialog-heading h2 {margin:4px 0;}
+.admin-shell .member-check {display:flex;flex-direction:row;align-items:center;gap:12px;min-height:44px;}
+@media(max-width:600px){.member-list article{padding:16px;}.member-list dl{grid-template-columns:1fr;gap:12px;}.member-actions{flex-direction:column;}.member-actions button{width:100%;}.member-admin-dialog{padding:18px;}.admin-toolbar{flex-wrap:wrap;}.admin-toolbar label{flex:1 1 100%;}}

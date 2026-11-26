@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import {memberFixture} from './memberFixture';
 
 // Browser fixtures exercise the UI without writing any records to dewi_sri.
 async function fixture(page:Page) {
@@ -49,6 +50,7 @@ for(const width of [320,390,768,1440])test(`CMS responsive navigation and forms 
 test('CMS publish workflow appears in the public app and archive keeps journal data',async({page})=>{
   test.setTimeout(90000);
   await fixture(page);await page.setViewportSize({width:390,height:844});await login(page);
+  const member=await memberFixture(page);
   await page.goto('/admin/pets');await page.getByRole('button',{name:'Tambah Pet',exact:true}).click();
   await page.getByLabel('Nama',{exact:true}).fill('Ayam Jantan');await page.getByLabel('Slug',{exact:true}).fill('ayam-jantan');await page.getByRole('combobox',{name:'Kategori',exact:true}).selectOption('3');
   await page.getByRole('button',{name:'Simpan',exact:true}).click();await expect(page.getByRole('heading',{name:'Ilustrasi Pet'})).toBeVisible();
@@ -61,10 +63,12 @@ test('CMS publish workflow appears in the public app and archive keeps journal d
   await page.goto('/?screen=beranda');await page.getByRole('button',{name:'Pilih jenis ayam',exact:true}).click();
   await page.getByRole('button',{name:'Ayam Jantan',exact:false}).click();await expect(page.getByRole('heading',{name:'Ayam Jantan',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Buka perawatan Ayam Jantan'}).click();await expect(page.getByRole('button',{name:/Beri makan/})).toBeVisible();await page.getByRole('button',{name:/Beri makan/}).click();
-  const journal=await page.evaluate(()=>localStorage.getItem('dewi_sri_care_journal'));expect(journal).toContain('ayam-jantan');
+  await expect.poll(()=>member.states.a?.careRecords.length).toBe(1);
+  const journal=JSON.stringify(member.states.a.careRecords);expect(journal).toContain('ayam-jantan');
   await page.goto('/admin/pets');await page.getByRole('button',{name:'Edit Ayam Jantan'}).click();await page.getByRole('combobox',{name:'Status',exact:true}).selectOption('archived');await page.getByRole('button',{name:'Simpan',exact:true}).click();await expect(page.getByText('Perubahan tersimpan.',{exact:true})).toBeVisible();
   await page.goto('/?screen=beranda');await page.getByRole('button',{name:'Pilih jenis ayam',exact:true}).click();await expect(page.getByRole('dialog').getByRole('button',{name:'Ayam Jantan',exact:false})).toHaveCount(0);
-  expect(await page.evaluate(()=>localStorage.getItem('dewi_sri_care_journal'))).toBe(journal);
+  expect(JSON.stringify(member.states.a.careRecords)).toBe(journal);
+  expect(await page.evaluate(()=>localStorage.getItem('dewi_sri_care_journal'))).toBeNull();
 });
 
 

@@ -7,7 +7,7 @@ import '../styles/secondary.css';
 
 interface EditProfileScreenProps {
   userProfile: UserProfile;
-  onSaveProfile: (updated: Partial<UserProfile>) => void;
+  onSaveProfile: (updated: Partial<UserProfile>) => Promise<unknown>;
   onBack: () => void;
 }
 
@@ -73,13 +73,14 @@ export function EditProfileScreen({ userProfile, onSaveProfile, onBack }: EditPr
     setFocusError('');
   };
 
-  const handleSave = (event: FormEvent<HTMLFormElement>) => {
+  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (saved || isReadingPhoto) return;
     if (!name.trim()) { setNameError('Tulis nama yang ingin ditampilkan.'); nameInputRef.current?.focus(); return; }
     if (!focusList.length) { setFocusError('Pilih setidaknya satu jenis yang ingin dirawat.'); firstFocusRef.current?.focus(); return; }
     setNameError('');
-    onSaveProfile({ name: name.trim(), region: region.trim(), careFocus: focusList, avatarUrl });
+    try { await onSaveProfile({ name: name.trim(), region: region.trim(), careFocus: focusList, avatarUrl }); }
+    catch(e) {setNameError((e as Error).message);return;}
     playSparkle(userProfile.soundEnabled);
     setSaved(true);
     returnTimer.current = setTimeout(onBack, 1000);
@@ -92,7 +93,7 @@ export function EditProfileScreen({ userProfile, onSaveProfile, onBack }: EditPr
         <form className="sc-profile-form" onSubmit={handleSave} noValidate>
           <section className="sc-avatar-section" aria-labelledby="sc-photo-label">
             <div className="sc-avatar-preview"><img src={avatarUrl} alt="Pratinjau foto profil" onError={(event) => { event.currentTarget.src = '/assets/generated/avatar-penyuluh.png'; }} /></div>
-            <div><h2 id="sc-photo-label">Foto profil</h2><p>Foto disimpan di perangkat ini.</p><button type="button" className="sc-button sc-button-light" onClick={() => fileInputRef.current?.click()} disabled={isReadingPhoto || saved}><Camera size={17} />{isReadingPhoto ? 'Membaca foto…' : 'Ganti foto'}</button></div>
+            <div><h2 id="sc-photo-label">Foto profil</h2><p>Foto disimpan privat pada akun Anda.</p><button type="button" className="sc-button sc-button-light" onClick={() => fileInputRef.current?.click()} disabled={isReadingPhoto || saved}><Camera size={17} />{isReadingPhoto ? 'Membaca foto…' : 'Ganti foto'}</button></div>
             <input ref={fileInputRef} type="file" accept="image/*" className="sr-only" tabIndex={-1} aria-label="Pilih foto profil" onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ''; void handleAvatarUpload(file); }} />
           </section>
           {avatarError && <p className="sc-field-error" role="alert">{avatarError}</p>}
@@ -101,10 +102,10 @@ export function EditProfileScreen({ userProfile, onSaveProfile, onBack }: EditPr
             <div className="sc-field"><label htmlFor="sc-name">Nama panggilan <span>Wajib</span></label><div className="sc-input-wrap"><UserRound size={19} aria-hidden="true" /><input ref={nameInputRef} id="sc-name" type="text" autoComplete="nickname" maxLength={60} value={name} onChange={(event) => { setName(event.target.value); if (nameError) setNameError(''); }} placeholder="Nama yang ingin ditampilkan" aria-invalid={Boolean(nameError)} aria-describedby={nameError ? 'sc-name-error' : undefined} disabled={saved} /></div>{nameError && <p id="sc-name-error" className="sc-field-error" role="alert">{nameError}</p>}</div>
             <div className="sc-field"><label htmlFor="sc-region">Daerah tempat tinggal <span>Opsional</span></label><div className="sc-input-wrap"><MapPin size={19} aria-hidden="true" /><input id="sc-region" type="text" autoComplete="address-level2" maxLength={100} value={region} onChange={(event) => setRegion(event.target.value)} placeholder="Contoh: Bandung, Jawa Barat" disabled={saved} /></div><p className="sc-field-help">Cukup nama kota atau kabupaten, tanpa alamat lengkap.</p></div>
             <fieldset className="sc-focus-field" aria-describedby={focusError ? 'sc-focus-error' : undefined}><legend>Yang ingin dirawat</legend><p>Pilih satu atau lebih.</p><div className="sc-focus-options">{[{ id: 'tanaman' as const, label: 'Tanaman', Icon: Leaf }, { id: 'ikan' as const, label: 'Ikan', Icon: Fish }, { id: 'ayam' as const, label: 'Ayam', Icon: Wheat }].map(({ id, label, Icon }, index) => <button ref={index === 0 ? firstFocusRef : undefined} key={id} type="button" className={focusList.includes(id) ? 'is-selected' : ''} aria-pressed={focusList.includes(id)} onClick={() => toggleFocus(id)} disabled={saved}><Icon size={23} /><span>{label}</span>{focusList.includes(id) && <Check size={15} className="sc-focus-check" />}</button>)}</div>{focusError && <p id="sc-focus-error" className="sc-field-error" role="alert">{focusError}</p>}</fieldset>
-            <div className="sc-field"><label htmlFor="sc-profile-email">Email profil <span>Pratinjau lokal</span></label><input id="sc-profile-email" type="email" className="sc-readonly-input" value={userProfile.email || ''} readOnly placeholder="Belum diisi" /><p className="sc-field-help">Email belum diverifikasi dan belum terhubung ke akun server.</p></div>
+            <div className="sc-field"><label htmlFor="sc-profile-email">Email akun</label><input id="sc-profile-email" type="email" className="sc-readonly-input" value={userProfile.email || ''} readOnly placeholder="Belum diisi" /><p className="sc-field-help">Nomor HP: {userProfile.phoneNumber||'Belum diisi'} · Username: {userProfile.username||'Belum diisi'}. Hubungi pengelola untuk mengubah identitas login.</p></div>
           </div>
           <div className="sc-form-actions"><button type="submit" className="sc-button sc-button-primary" disabled={isReadingPhoto || saved}>{saved ? <Check size={20} /> : <Save size={20} />}{saved ? 'Perubahan tersimpan' : 'Simpan perubahan'}</button><button type="button" className="sc-button sc-button-plain" onClick={onBack} disabled={saved}>Batal</button></div>
-          {saved && <p className="sc-save-confirmation" role="status"><Check size={18} />Profil tersimpan di browser ini.</p>}
+          {saved && <p className="sc-save-confirmation" role="status"><Check size={18} />Profil tersimpan pada akun Anda.</p>}
         </form>
       </main>
     </div>

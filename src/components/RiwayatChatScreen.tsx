@@ -13,6 +13,7 @@ interface RiwayatChatScreenProps {
   onSelectConversation: (conversation: ChatConversation) => void;
   onDeleteConversation: (id: string) => void;
   onNewChat: () => void;
+  onLoadMore?: () => void;
 }
 
 const sections: { key: ChatConversation['dateCategory']; label: string }[] = [
@@ -30,15 +31,16 @@ function TopicIcon({ title }: { title: string }) {
   return <MessageCircle size={23} />;
 }
 
-export function RiwayatChatScreen({ conversations, activeConversationId, onBackToChat, onSelectConversation, onDeleteConversation, onNewChat }: RiwayatChatScreenProps) {
+export function RiwayatChatScreen({ conversations, activeConversationId, onBackToChat, onSelectConversation, onDeleteConversation, onNewChat,onLoadMore }: RiwayatChatScreenProps) {
   const [query, setQuery] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<ChatConversation | null>(null);
   const filtered = useMemo(() => searchConversations(conversations, query), [conversations, query]);
 
   return (
     <div className="sc-screen sc-history">
-      <header className="sc-header"><button type="button" className="sc-icon-button" onClick={onBackToChat} aria-label="Kembali ke Tanya Tani"><ArrowLeft size={23} /></button><div><h1>Riwayat konsultasi</h1><p>{conversations.length} percakapan di perangkat ini</p></div></header>
+      <header className="sc-header"><button type="button" className="sc-icon-button" onClick={onBackToChat} aria-label="Kembali ke Tanya Tani"><ArrowLeft size={23} /></button><div><h1>Riwayat konsultasi</h1><p>{conversations.length} percakapan dimuat dari akun Anda</p></div></header>
       <main className="sc-main">
+        {onLoadMore&&<button type="button" className="sc-button sc-button-light" onClick={onLoadMore}>Muat percakapan sebelumnya</button>}
         <button type="button" className="sc-button sc-button-primary sc-history-new" onClick={() => { playPop(); onNewChat(); }}><Plus size={20} />Mulai pertanyaan baru</button>
         <div className="sc-history-search"><label htmlFor="sc-history-search">Cari percakapan</label><div className="sc-input-wrap"><Search size={20} aria-hidden="true" /><input id="sc-history-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari tanaman atau topik" /></div>{query && <button type="button" className="sc-search-clear" onClick={() => setQuery('')}>Hapus pencarian<X size={15} /></button>}</div>
 
@@ -58,10 +60,10 @@ export function RiwayatChatScreen({ conversations, activeConversationId, onBackT
             <button type="button" className="sc-delete-conversation" onClick={() => setDeleteTarget(conversation)} aria-label={`Hapus percakapan ${conversation.title}`}><Trash2 size={18} /><span>Hapus</span></button>
           </article>)}</div></section>;
         })}</div>}
-        <p className="sc-history-storage"><BookOpen size={16} aria-hidden="true" />Riwayat tersimpan di browser ini, belum tersinkron ke perangkat lain.</p>
+        <p className="sc-history-storage"><BookOpen size={16} aria-hidden="true" />Riwayat tersimpan pada akun Anda dan dapat dibuka setelah masuk.</p>
       </main>
 
-      {deleteTarget && <Dialog onClose={() => setDeleteTarget(null)} labelledBy="sc-delete-conversation-title" className="sc-dialog"><div className="sc-dialog-heading"><h2 id="sc-delete-conversation-title">Hapus percakapan?</h2><button type="button" className="sc-icon-button" onClick={() => setDeleteTarget(null)} aria-label="Tutup konfirmasi hapus"><X size={21} /></button></div><p>“{deleteTarget.title}” akan dihapus dari riwayat pada browser ini.</p><div className="sc-dialog-actions"><button type="button" className="sc-button sc-button-light" onClick={() => setDeleteTarget(null)}>Batal</button><button type="button" className="sc-button sc-button-danger" onClick={() => { onDeleteConversation(deleteTarget.id); setDeleteTarget(null); }}>Ya, hapus</button></div></Dialog>}
+      {deleteTarget && <Dialog onClose={() => setDeleteTarget(null)} labelledBy="sc-delete-conversation-title" className="sc-dialog"><div className="sc-dialog-heading"><h2 id="sc-delete-conversation-title">Hapus percakapan?</h2><button type="button" className="sc-icon-button" onClick={() => setDeleteTarget(null)} aria-label="Tutup konfirmasi hapus"><X size={21} /></button></div><p>“{deleteTarget.title}” akan dihapus dari riwayat akun Anda.</p><div className="sc-dialog-actions"><button type="button" className="sc-button sc-button-light" onClick={() => setDeleteTarget(null)}>Batal</button><button type="button" className="sc-button sc-button-danger" onClick={() => { onDeleteConversation(deleteTarget.id); setDeleteTarget(null); }}>Ya, hapus</button></div></Dialog>}
     </div>
   );
 }

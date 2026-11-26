@@ -10,11 +10,11 @@ interface PengaturanScreenProps {
   farmerRank: FarmerRank;
   onOpenEditProfile: () => void;
   onOpenRankPetani: () => void;
-  onUpdateProfile: (updated: Partial<UserProfile>) => void;
+  onUpdateProfile: (updated: Partial<UserProfile>) => Promise<unknown>;
   onLogout: () => void;
 }
 
-type SettingsDialog = 'account' | 'about' | 'guide' | 'language' | 'logout' | null;
+type SettingsDialog = 'about' | 'guide' | 'language' | 'logout' | null;
 
 export function PengaturanScreen({ userProfile, farmerRank, onOpenEditProfile, onOpenRankPetani, onUpdateProfile, onLogout }: PengaturanScreenProps) {
   const [dialog, setDialog] = useState<SettingsDialog>(null);
@@ -30,22 +30,22 @@ export function PengaturanScreen({ userProfile, farmerRank, onOpenEditProfile, o
     toastTimer.current = setTimeout(() => setToast(''), 2800);
   };
 
-  const setSound = () => {
+  const setSound = async () => {
     const enabled = !userProfile.soundEnabled;
-    onUpdateProfile({ soundEnabled: enabled });
+    try {await onUpdateProfile({ soundEnabled: enabled });}catch {return;}
     if (enabled) playSparkle(true);
     notify(enabled ? 'Suara diaktifkan.' : 'Suara dimatikan.');
   };
 
-  const setReminder = () => {
+  const setReminder = async () => {
     const enabled = !userProfile.reminderEnabled;
-    onUpdateProfile({ reminderEnabled: enabled });
+    try {await onUpdateProfile({ reminderEnabled: enabled });}catch {return;}
     playPop(userProfile.soundEnabled);
     notify(enabled ? 'Tanda pengingat di beranda diaktifkan.' : 'Tanda pengingat dimatikan.');
   };
 
-  const setTextSize = (size: UserProfile['textSize']) => {
-    onUpdateProfile({ textSize: size });
+  const setTextSize = async (size: UserProfile['textSize']) => {
+    try {await onUpdateProfile({ textSize: size });}catch {return;}
     playPop(userProfile.soundEnabled);
     notify(`Ukuran tulisan ${size === 'small' ? 'kecil' : size === 'large' ? 'besar' : 'normal'} dipilih.`);
   };
@@ -60,7 +60,7 @@ export function PengaturanScreen({ userProfile, farmerRank, onOpenEditProfile, o
       <main className="sc-main">
         <section className="sc-profile-card" aria-label="Profil Anda">
           <img className="sc-profile-avatar" src={userProfile.avatarUrl || '/assets/generated/avatar-penyuluh.png'} alt="" onError={(event) => { event.currentTarget.src = '/assets/generated/avatar-penyuluh.png'; }} />
-          <div className="sc-profile-copy"><h2>{userProfile.name || 'Sobat Tani'}</h2><p>{userProfile.region || 'Lokasi belum diatur'}</p><span>Profil di perangkat ini</span></div>
+          <div className="sc-profile-copy"><h2>{userProfile.name || 'Sobat Tani'}</h2><p>{userProfile.region || 'Lokasi belum diatur'}</p><span>Anggota KWT Dewi Sri</span></div>
           <button className="sc-button sc-button-light sc-profile-edit" type="button" onClick={onOpenEditProfile}>Ubah profil<ChevronRight size={17} /></button>
         </section>
 
@@ -92,26 +92,25 @@ export function PengaturanScreen({ userProfile, farmerRank, onOpenEditProfile, o
         <section className="sc-section" aria-labelledby="sc-help-title">
           <h2 id="sc-help-title">Profil dan bantuan</h2>
           <div className="sc-card sc-link-list">
-            <button type="button" onClick={() => setDialog('account')}><ShieldCheck size={21} /><span><strong>Akses akun</strong><small>Informasi profil lokal</small></span><ChevronRight size={18} /></button>
+            <a href="/change-password"><ShieldCheck size={21} /><span><strong>Ubah Kata Sandi</strong><small>Kelola akses akun Anda</small></span><ChevronRight size={18} /></a>
             <button type="button" onClick={() => setDialog('language')}><Languages size={21} /><span><strong>Bahasa</strong><small>Bahasa Indonesia</small></span><ChevronRight size={18} /></button>
             <button type="button" onClick={() => setDialog('guide')}><CircleHelp size={21} /><span><strong>Cara memakai Dewi Sri</strong><small>Pilihan jenis, perawatan, dan foto</small></span><ChevronRight size={18} /></button>
             <button type="button" onClick={() => setDialog('about')}><Leaf size={21} /><span><strong>Tentang Dewi Sri</strong><small>Teman merawat kebun dan ternak</small></span><ChevronRight size={18} /></button>
           </div>
         </section>
 
-        <div className="sc-storage-note"><Database size={20} aria-hidden="true" /><p><strong>Tersimpan di browser ini</strong><span>Profil, jadwal, dan riwayat belum tersinkron ke perangkat lain.</span></p></div>
+        <div className="sc-storage-note"><Database size={20} aria-hidden="true" /><p><strong>Tersimpan pada akun Anda</strong><span>Profil, jadwal, dan riwayat dimuat dari server setelah Anda masuk.</span></p></div>
         <button className="sc-logout-button" type="button" onClick={() => setDialog('logout')}><LogOut size={19} />Keluar ke layar awal</button>
       </main>
 
       {toast && <div className="sc-toast" role="status"><Check size={18} aria-hidden="true" />{toast}</div>}
 
       {dialog && <Dialog onClose={() => setDialog(null)} labelledBy="sc-settings-dialog-title" className="sc-dialog">
-        <div className="sc-dialog-heading"><h2 id="sc-settings-dialog-title">{dialog === 'account' ? 'Profil lokal' : dialog === 'about' ? 'Tentang Dewi Sri' : dialog === 'language' ? 'Bahasa aplikasi' : dialog === 'logout' ? 'Keluar ke layar awal?' : 'Cara memakai Dewi Sri'}</h2><button type="button" className="sc-icon-button" aria-label="Tutup informasi" onClick={() => setDialog(null)}><X size={21} /></button></div>
-        {dialog === 'account' && <><span className="sc-dialog-illustration" aria-hidden="true"><ShieldCheck size={34} /></span><p>Profil ini tersimpan di browser perangkat Anda. Login saat ini merupakan pratinjau lokal dan belum memakai akun server atau kata sandi.</p><p className="sc-dialog-note">Data profil dapat diubah melalui tombol Ubah profil.</p><button type="button" className="sc-button sc-button-primary" onClick={() => setDialog(null)}>Mengerti</button></>}
-        {dialog === 'about' && <><span className="sc-dialog-illustration" aria-hidden="true"><Leaf size={34} /></span><p>Dewi Sri membantu petani rumahan mencatat perawatan tanaman, ikan, dan ayam dengan panduan yang mudah diikuti.</p><p className="sc-dialog-note">Versi frontend ini memakai data lokal. Cuaca langsung, analisis gambar AI, dan sinkronisasi akun belum terhubung.</p><button type="button" className="sc-button sc-button-primary" onClick={() => setDialog(null)}>Mengerti</button></>}
+        <div className="sc-dialog-heading"><h2 id="sc-settings-dialog-title">{dialog === 'about' ? 'Tentang Dewi Sri' : dialog === 'language' ? 'Bahasa aplikasi' : dialog === 'logout' ? 'Keluar ke layar awal?' : 'Cara memakai Dewi Sri'}</h2><button type="button" className="sc-icon-button" aria-label="Tutup informasi" onClick={() => setDialog(null)}><X size={21} /></button></div>
+        {dialog === 'about' && <><span className="sc-dialog-illustration" aria-hidden="true"><Leaf size={34} /></span><p>Dewi Sri membantu anggota KWT mencatat perawatan tanaman, ikan, dan ayam. Cuaca langsung dan analisis gambar AI belum terhubung.</p><button type="button" className="sc-button sc-button-primary" onClick={() => setDialog(null)}>Mengerti</button></>}
         {dialog === 'language' && <><p>Saat ini aplikasi tersedia dalam Bahasa Indonesia.</p><div className="sc-language-choice"><Check size={20} aria-hidden="true" />Bahasa Indonesia<span>Dipilih</span></div><button type="button" className="sc-button sc-button-primary" onClick={() => setDialog(null)}>Mengerti</button></>}
         {dialog === 'guide' && <><ol className="sc-guide-list"><li><strong>Pilih yang dirawat.</strong><span>Pilih kategori tanaman, ikan, atau ayam, lalu tentukan jenisnya.</span></li><li><strong>Catat perawatan.</strong><span>Gunakan tombol Rawat dan atur waktu kegiatan di Jadwal.</span></li><li><strong>Gunakan foto.</strong><span>Ambil atau pilih foto, lalu pilih jenis dan kebutuhan untuk melihat panduan lokal.</span></li><li><strong>Baca lagi jawabannya.</strong><span>Percakapan tersimpan di Riwayat konsultasi.</span></li></ol><p className="sc-dialog-note">Panduan foto berdasarkan pilihan Anda. Foto belum dianalisis secara otomatis.</p><button type="button" className="sc-button sc-button-primary" onClick={() => setDialog(null)}>Sudah mengerti</button></>}
-        {dialog === 'logout' && <><span className="sc-dialog-illustration sc-dialog-illustration-danger" aria-hidden="true"><LogOut size={32} /></span><p>Profil dan catatan tetap tersimpan di browser ini. Anda dapat membukanya lagi saat kembali ke aplikasi.</p><div className="sc-dialog-actions"><button type="button" className="sc-button sc-button-light" onClick={() => setDialog(null)}>Batal</button><button type="button" className="sc-button sc-button-danger" onClick={() => { setDialog(null); onLogout(); }}>Ya, keluar</button></div></>}
+        {dialog === 'logout' && <><span className="sc-dialog-illustration sc-dialog-illustration-danger" aria-hidden="true"><LogOut size={32} /></span><p>Catatan tetap tersimpan pada akun Anda. Masuk kembali untuk membukanya.</p><div className="sc-dialog-actions"><button type="button" className="sc-button sc-button-light" onClick={() => setDialog(null)}>Batal</button><button type="button" className="sc-button sc-button-danger" onClick={() => { setDialog(null); onLogout(); }}>Ya, keluar</button></div></>}
       </Dialog>}
     </div>
   );

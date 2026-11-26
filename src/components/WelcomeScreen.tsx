@@ -20,7 +20,7 @@ export function WelcomeScreen({ onStart, onOpenLogin, onOpenRegister }: WelcomeS
         <div><img src="/assets/generated/ayam-petelur.webp" alt="" /><span>Ayam</span></div>
       </div>
       <div className="ob-welcome-benefits"><span><CalendarDays size={17} />Jadwal harian</span><span><Camera size={17} />Panduan foto</span></div>
-      <div className="ob-welcome-actions"><button id="btn-start" type="button" className="app-button app-button--wide" onClick={onStart}>Mulai merawat<ArrowRight size={19} /></button><p>Bisa langsung digunakan tanpa akun.</p>{(onOpenLogin || onOpenRegister) && <div className="ob-welcome-profile-links">{onOpenLogin && <button type="button" onClick={onOpenLogin}>Buka profil</button>}{onOpenRegister && <button type="button" onClick={onOpenRegister}>Buat profil lokal</button>}</div>}</div>
+      <div className="ob-welcome-actions"><button id="btn-start" type="button" className="app-button app-button--wide" onClick={onStart}>Masuk anggota KWT<ArrowRight size={19} /></button><p>Akun anggota dibuat oleh pengelola KWT Dewi Sri.</p></div>
     </main>
   );
 }

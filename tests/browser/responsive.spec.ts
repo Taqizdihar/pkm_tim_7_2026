@@ -1,8 +1,10 @@
 import { expect, test } from '@playwright/test';
+import {memberFixture} from './memberFixture';
 
-const screens = ['beranda', 'jadwal', 'jurnal', 'chat_ai', 'chat_history', 'pengaturan', 'rank_petani', 'edit_profile', 'welcome', 'login', 'register', 'forgot_password'];
+const screens = ['beranda', 'jadwal', 'jurnal', 'chat_ai', 'chat_history', 'pengaturan', 'rank_petani', 'edit_profile'];
 
 for (const width of [320, 768, 1440]) test(`member screens reflow at ${width}px`, async ({ page }) => {
+  await memberFixture(page);
   await page.route('**/api/v1/catalog', route => route.fulfill({ status: 503, json: { error: 'fixture offline' } }));
   await page.setViewportSize({ width, height: width === 320 ? 568 : 900 });
   for (const screen of screens) {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Leaf, LogOut, Plus, ArrowLeft, LayoutDashboard, Sprout, ListChecks, BookOpen, Settings2, Menu, X, Layers3, CheckCircle2, FilePenLine } from 'lucide-react';
+import { Leaf, LogOut, Plus, ArrowLeft, LayoutDashboard, Sprout, ListChecks, BookOpen, Settings2, Menu, X, Layers3, CheckCircle2, FilePenLine, Users } from 'lucide-react';
+import {Members} from './Members.tsx';
 import { api, ApiError } from './api.ts';
 import './admin.css';
 import './admin-refined.css';
@@ -10,6 +11,7 @@ const navigation = [
   { url: '/admin/pets', label: 'Kelola Pet & Kategori', icon: Sprout },
   { url: '/admin/care-actions', label: 'Tindakan Perawatan', icon: ListChecks },
   { url: '/admin/guides', label: 'Panduan Budidaya', icon: BookOpen },
+  { url: '/admin/members', label: 'Kelola Anggota KWT', icon: Users },
   { url: '/admin/settings', label: 'Pengaturan', icon: Settings2 },
 ];
 const statusOptions = [['draft','Draf'],['published','Terbit'],['archived','Arsip']];
@@ -63,7 +65,7 @@ export default function AdminApp() {
     {menuOpen && <button type="button" className="admin-nav-backdrop" aria-label="Tutup menu administrasi" onClick={() => { setMenuOpen(false); menuButtonRef.current?.focus(); }} />}
     <div className="admin-layout"><nav id="admin-navigation" className={menuOpen ? 'is-open' : ''} aria-label="Administrasi" role={menuOpen ? 'dialog' : undefined} aria-modal={menuOpen ? true : undefined}><a href="/admin" className="admin-brand admin-sidebar-brand"><span className="admin-brand-mark"><Leaf aria-hidden="true" /></span><span>Dewi Sri<small>Ruang administrator</small></span></a><p className="admin-nav-caption">Katalog budidaya</p><div className="admin-nav-links">{navigation.map(({url,label,icon:Icon}) => <a key={url} href={url} aria-current={(path===url || (url==='/admin/pets' && path==='/admin/categories')) ? 'page' : undefined}><Icon size={19} aria-hidden="true" /><span>{label}</span></a>)}</div><div className="admin-nav-account"><span className="admin-account-avatar" aria-hidden="true">{String(user.name || 'A').slice(0, 1).toUpperCase()}</span><span><strong>{user.name}</strong><small>Administrator</small></span></div><button type="button" className="admin-logout" onClick={logout}><LogOut size={18} />Keluar</button></nav>
       <main id="admin-main"><p className="admin-eyebrow">Ruang kerja internal · {user.name}</p><ErrorNote text={error} />
-        {!known ? <><h1>Halaman tidak ditemukan</h1><a href="/admin">Kembali ke dashboard</a></> : path==='/admin' ? <Dashboard /> : path==='/admin/settings' ? <Settings /> : <Manager key={path} resource={path==='/admin/pets' ? 'species' : path.split('/').pop()!} />}
+        {!known ? <><h1>Halaman tidak ditemukan</h1><a href="/admin">Kembali ke dashboard</a></> : path==='/admin' ? <Dashboard /> : path==='/admin/members' ? <Members /> : path==='/admin/settings' ? <Settings /> : <Manager key={path} resource={path==='/admin/pets' ? 'species' : path.split('/').pop()!} />}
       </main></div>
   </div>;
 }

@@ -22,7 +22,7 @@ export async function checkDatabase(pool: Pool, expectedName: string): Promise<v
   const [rows] = await pool.query<(RowDataPacket & { connected: string; schema_name: string })[]>(
     'SELECT 1 AS connected, DATABASE() AS schema_name',
   );
-  if (rows[0]?.connected !== '1' || rows[0]?.schema_name !== expectedName) {
+  if (Number(rows[0]?.connected) !== 1 || rows[0]?.schema_name !== expectedName) {
     throw new Error('Database schema is unavailable');
   }
 }

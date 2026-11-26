@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react';
 import { Camera, Check, ChevronRight, Copy, History, ImagePlus, Info, Leaf, LoaderCircle, MessageCircle, Plus, Send, Trash2, X } from 'lucide-react';
 import type { ChatConversation, ChatMessage, PetVariety } from '../types/index.ts';
-import { buildConversation, createChatId } from '../utils/chatStorage.ts';
+import { createChatId } from '../utils/chatStorage.ts';
 import { playPop } from '../utils/audioEffects.ts';
 import { SPECIES } from '../data/species.ts';
-import { getLocalReply, getPhotoGuidance, getSpeciesType } from '../features/consultation/localGuide.ts';
+import { getPhotoGuidance, getSpeciesType } from '../features/consultation/localGuide.ts';
 import type { PhotoIntent } from '../features/consultation/localGuide.ts';
 import { Dialog } from './ui/Dialog.tsx';
+import {memberApi,uploadDataImage} from '../api/memberApi.ts';
 import '../styles/consultation.css';
 
 interface ChatAIScreenProps {
@@ -40,14 +41,6 @@ const TOPICS = [
   { label: 'Kolam ikan', prompt: 'Bagaimana menjaga kualitas air kolam ikan?' },
   { label: 'Ayam petelur', prompt: 'Bagaimana merawat ayam petelur dan kandangnya?' },
 ];
-
-function localTime(): string {
-  return new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' }).format(new Date());
-}
-
-function createMessage(sender: ChatMessage['sender'], text: string): ChatMessage {
-  return { id: `${sender}-${createChatId()}`, sender, text, timestamp: localTime() };
-}
 
 function compressPhoto(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -127,7 +120,7 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
   const cameraPickerRef = useRef<HTMLInputElement>(null);
   const galleryPickerRef = useRef<HTMLInputElement>(null);
   const threadIdRef = useRef(thread.id);
-  const lastSavedMessages = useRef<ChatMessage[] | null>(null);
+  const [moreMessages,setMoreMessages]=useState((conversation?.messages.length||0)>=100);
   const requestVersion = useRef(0);
   const photoVersion = useRef(0);
   const lastQuestion = useRef('');
@@ -164,14 +157,6 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
     setShowAttachDialog(false);
   }, [conversationId, conversation]);
 
-  useEffect(() => {
-    if (!thread.hasChanges || lastSavedMessages.current === thread.messages) return;
-    const saved = buildConversation(thread.id, thread.messages);
-    if (saved) {
-      lastSavedMessages.current = thread.messages;
-      onConversationChange(saved);
-    }
-  }, [thread, onConversationChange]);
 
   useEffect(() => {
     if (!openPhotoOnMount) return;
@@ -207,10 +192,6 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
     };
   }, []);
 
-  function appendMessages(messages: ChatMessage[]) {
-    setThread((previous) => ({ ...previous, messages: [...previous.messages, ...messages], hasChanges: true }));
-  }
-
   async function sendMessage(question = input) {
     const text = question.trim();
     if (!text || sendingRef.current) return;
@@ -221,12 +202,13 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
     setRequestError('');
     setIsSending(true);
     setInput('');
-    appendMessages([createMessage('user', text)]);
     playPop();
     try {
-      const reply = await Promise.resolve(getLocalReply(text));
+      const key = /^\d+$/.test(thread.id) ? thread.id : (await memberApi('/member/chat/conversations','POST',{title:text.slice(0,160)})).id;
+      const saved = await memberApi(`/member/chat/conversations/${key}/messages`,'POST',{content:text});
       if (!mountedRef.current || version !== requestVersion.current || activeThreadId !== threadIdRef.current) return;
-      appendMessages([createMessage('assistant', reply)]);
+      setThread({id:saved.id,messages:saved.messages,hasChanges:false});
+      onConversationChange(saved);
     } catch {
       if (mountedRef.current && version === requestVersion.current) setRequestError('Panduan belum dapat ditampilkan. Coba kirim lagi.');
     } finally {
@@ -286,21 +268,25 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
     else galleryPickerRef.current?.click();
   }
 
-  function submitPhotoGuide(event: FormEvent<HTMLFormElement>) {
+  async function submitPhotoGuide(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!photoDraft || !photoSpecies) {
       setPhotoError('Pilih jenis tanaman atau hewan terlebih dahulu.');
       speciesRef.current?.focus();
       return;
     }
-    const result = getPhotoGuidance(photoSpecies, photoIntent, photoDescription);
-    appendMessages([
-      { ...createMessage('user', result.question), photoUrl: photoDraft.url, photoName: photoDraft.name },
-      createMessage('assistant', result.reply),
-    ]);
-    setPhotoDraft(null);
-    setPhotoError('');
-    playPop();
+    if(sendingRef.current)return;
+    sendingRef.current=true;setIsSending(true);setPhotoError('');
+    const version=requestVersion.current;
+    try {
+      const result=getPhotoGuidance(photoSpecies,photoIntent,photoDescription);
+      const media=await uploadDataImage(photoDraft.url,'/member/chat/media');
+      const key=/^\d+$/.test(thread.id)?thread.id:(await memberApi('/member/chat/conversations','POST',{title:result.question.slice(0,160)})).id;
+      const saved=await memberApi(`/member/chat/conversations/${key}/messages`,'POST',{content:result.question,media_id:media.id,species:photoSpecies});
+      if(!mountedRef.current||version!==requestVersion.current)return;
+      setThread({id:saved.id,messages:saved.messages,hasChanges:false});onConversationChange(saved);setPhotoDraft(null);playPop();
+    } catch(e) {if(mountedRef.current&&version===requestVersion.current)setPhotoError((e as Error).message);}
+    finally {if(mountedRef.current&&version===requestVersion.current){sendingRef.current=false;setIsSending(false);}}
   }
 
   async function copyMessage(text: string) {
@@ -337,6 +323,7 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
         </div>}
 
         <div className="consultation-messages" aria-live="polite" aria-relevant="additions">
+          {moreMessages&&<button className="sc-button sc-button-light" disabled={isSending} onClick={async()=>{setIsSending(true);try{const older=await memberApi(`/member/chat/conversations/${thread.id}?offset=${thread.messages.length}`);if(mountedRef.current){setMoreMessages(older.messages.length===100);setThread(prev=>({...prev,messages:[...older.messages,...prev.messages]}));}}catch(e){if(mountedRef.current)setRequestError((e as Error).message);}finally{if(mountedRef.current)setIsSending(false);}}}>Muat pesan sebelumnya</button>}
           {thread.messages.map((message) => <article key={message.id} className={`consultation-message consultation-message--${message.sender}`} aria-label={message.sender === 'user' ? 'Pesan Anda' : 'Jawaban Dewi Sri'}>
             <div className="consultation-message-meta"><strong>{message.sender === 'user' ? 'Anda' : 'Dewi Sri'}</strong><span>{message.timestamp}</span></div>
             <div className="consultation-bubble">
@@ -370,7 +357,7 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
         </form>}
 
         {isSending && <div className="consultation-processing" role="status"><LoaderCircle size={21} /><span>Menyiapkan panduan...</span></div>}
-        {hasUserMessages && !photoDraft && <p className="consultation-storage-note">Percakapan dan foto disimpan di perangkat ini.</p>}
+        {hasUserMessages && !photoDraft && <p className="consultation-storage-note">Percakapan dan foto tersimpan privat pada akun Anda.</p>}
         <div ref={messagesEndRef} className="consultation-scroll-end" />
       </main>
 

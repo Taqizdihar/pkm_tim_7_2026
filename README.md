@@ -1,18 +1,32 @@
 # Dewi Sri
 
+## Aplikasi tertutup anggota KWT
+
+Akun anggota dibuat hanya oleh administrator melalui **Kelola Anggota KWT** (`/admin/members`). Tidak tersedia pendaftaran publik atau akses tamu. Anggota masuk di `/login` menggunakan nomor HP domestik `08…`, username, atau email. Nomor tetap berupa string; spasi/tanda minus dan awalan `+62`/`62` dinormalisasi ke awalan `0`. Email dan username opsional bila nomor HP tersedia.
+
+Administrator tetap dibuat melalui CLI dan masuk di `/admin/login`. Cookie HttpOnly `dewi_admin` dan `dewi_member`, tabel sesi, serta token CSRF keduanya terpisah. Anggota tidak dapat memakai API admin dan sesi admin tidak membuka kebun anggota.
+
+Pengelola mengisi identitas dan kata sandi awal sedikitnya 15 karakter, lalu menyampaikannya secara pribadi. Akun baru secara default wajib mengganti kata sandi pada `/change-password`. Untuk anggota yang lupa kata sandi, gunakan **Atur Ulang Kata Sandi** di CMS; semua sesi lama dicabut. Belum ada pemulihan WhatsApp, SMS, atau email. Kata sandi anggota mendukung frasa 15–200 karakter tanpa aturan komposisi dan tanpa pemotongan atau pengubahan spasi.
+
+Profil, preferensi, pilihan jenis dan progres Pet, jadwal, jurnal, hadiah harian, serta percakapan disimpan di MySQL. React menyimpan salinan di memori setelah pemeriksaan sesi. Server menentukan efek perawatan, tanggal Asia/Jakarta, poin, dan kepemilikan setiap rekaman. Foto pribadi disimpan di direktori privat server dan hanya tersedia lewat endpoint anggota yang memeriksa pemiliknya. Tanya Tani tetap panduan deterministik, tanpa penyedia AI eksternal.
+
+**Skema:** pelengkap [`04_member_auth.sql`](docs/database/04_member_auth.sql) memperluas `users` dan menambah `member_sessions`, sehingga total menjadi **21 tabel**. Pada pemeriksaan 26 November 2026, MySQL lokal sudah memiliki perluasan tersebut. Bila belum tersedia di lingkungan lain: **phpMyAdmin → dewi_sri → SQL → Paste SQL → Go**. Bagian `ALTER TABLE` hanya dijalankan sekali. Jangan menjalankan ulang schema/seed atau skrip 04 pada database yang sudah diperluas. Aplikasi tidak menjalankan DDL otomatis.
+
+Data prototipe lama di LocalStorage tetap dipertahankan tanpa dimuat, diunggah, atau dikaitkan dengan akun. Hanya cache katalog publik yang masih digunakan aplikasi aktif. Prosedur cadangan data lama, matriks pengujian, dan batas verifikasi tersedia di [`docs/member-auth-verification.md`](docs/member-auth-verification.md).
+
 ## Backend dan CMS internal
 
 Backend Express/TypeScript tersedia di [`backend/`](backend/README.md), dengan autentikasi administrator melalui cookie HttpOnly, hash Argon2id, sesi MySQL, validasi Zod, CSRF, dan audit perubahan. CMS React tersedia di `/admin/login` dan `/admin`; navigasi aplikasi KWT tetap memakai `?screen=beranda` dan halaman yang sudah ada.
 
-**Langkah manual baru:** jalankan [`docs/database/03_admin_sessions.sql`](docs/database/03_admin_sessions.sql) melalui phpMyAdmin > `dewi_sri` > tab SQL. Skrip ini hanya menambahkan tabel sesi sebagai pelengkap 19 tabel awal. Aplikasi tidak menjalankan DDL/seed otomatis dan tidak membuat akun administrator otomatis.
+Tabel sesi admin berasal dari [`docs/database/03_admin_sessions.sql`](docs/database/03_admin_sessions.sql). Jangan ulangi pemasangan pada database yang sudah lengkap. Pelengkap anggota dan pemeriksaan kesiapan dijelaskan di atas; aplikasi tidak menjalankan DDL/seed atau membuat administrator otomatis.
 
 Dari `backend`, jalankan `npm install`, sesuaikan `.env` lokal yang sudah ada, lalu `npm run admin:create` untuk membuat akun melalui terminal dan `npm run dev` untuk API di port 3001. Jalankan `npm install` dan `npm run dev` dari root dalam terminal lain untuk frontend di port 3000. Gunakan **http://localhost:3000/admin/login** untuk masuk. Perintah pengelolaan lain: `npm run admin:list`, `npm run admin:reset-password`, dan `npm run admin:disable`.
 
-Katalog publik memuat kategori, Pet terbit, ilustrasi, tindakan, dan panduan dari MySQL melalui `/api/v1/catalog`. Jenis baru dapat muncul tanpa perubahan konstanta TypeScript. LocalStorage tetap menyimpan profil dan aktivitas pengguna; katalog tersimpan menjadi fallback dengan pemberitahuan jika backend tidak tersedia. Ilustrasi bawaan tetap di `public/assets/generated`; unggahan CMS berada di `backend/storage/uploads` yang tidak ikut Git dan memerlukan penyimpanan persisten saat hosting.
+Katalog publik memuat kategori, Pet terbit, ilustrasi, tindakan, dan panduan dari MySQL melalui `/api/v1/catalog`. Jenis baru dapat muncul tanpa perubahan konstanta TypeScript. Cache katalog publik menjadi fallback dengan pemberitahuan jika katalog server tidak tersedia; akses pribadi tetap memerlukan sesi server. Ilustrasi bawaan berada di `public/assets/generated`; unggahan berada di `backend/storage/uploads` yang tidak ikut Git dan memerlukan penyimpanan persisten saat hosting.
 
 Panduan langkah awal, API, CLI, keamanan, dan hosting tersedia di [backend/README.md](backend/README.md). Hasil pengujian dan batas verifikasi langsung tercatat di [docs/cms-verification.md](docs/cms-verification.md).
 
-Frontend React dan TypeScript untuk merawat tanaman, ikan, dan ayam. Profil dan aktivitas pengguna tetap berjalan lokal di browser; katalog dimuat dari API dengan fallback tersimpan. Kata sandi administrator hanya digunakan untuk CMS internal.
+Frontend React dan TypeScript untuk merawat tanaman, ikan, dan ayam. Profil dan aktivitas pengguna dimuat dari API anggota; katalog publik memiliki cache lokal.
 
 ## Menjalankan
 
@@ -47,12 +61,11 @@ npm run build
 
 ## Menambah jenis dan aset
 
-1. Tambahkan ID pada union jenis di `src/types/index.ts`.
-2. Tambahkan entri pada `src/data/species.ts`, termasuk kelompok dan gambar yang sesuai bentuk aslinya.
-3. Lengkapi panduan dalam `src/data/guides.ts` bila termasuk tanaman.
-4. Simpan gambar di `public/assets/generated/` dan catat prompt pada `prompts.json`. Gunakan WebP ringan untuk UI; sumber PNG boleh disimpan.
+1. Buka **Kelola Pet & Kategori** pada CMS, buat jenis dengan kategori yang sesuai, lalu atur tindakan, ilustrasi, dan status penerbitannya.
+2. Lengkapi panduan pada **Panduan Budidaya**. Jenis baru dimuat dari API tanpa mengubah union TypeScript.
+3. Untuk aset bawaan yang disertakan dalam kode, simpan di `public/assets/generated/` dan catat prompt pada `prompts.json`. Gunakan WebP ringan; sumber PNG boleh disimpan.
 
-Progres dan jadwal disimpan per ID spesies. Format lama berdasarkan kategori tetap dibaca dan dipindahkan hanya ke jenis yang sebelumnya dipilih. Data baru melalui normalisasi sebelum dipakai UI. Semua tanggal harian memakai Asia/Jakarta.
+Progres dan jadwal disimpan pada rekaman budidaya per akun dan spesies. Pemilihan kembali jenis memakai rekaman yang sama; schema tetap mendukung beberapa rekaman budidaya sejenis kelak. Data prototipe lama tidak diimpor otomatis. Semua tanggal harian memakai Asia/Jakarta.
 
 ## Batas frontend dan titik integrasi
 
@@ -60,7 +73,7 @@ Progres dan jadwal disimpan per ID spesies. Format lama berdasarkan kategori tet
 - Jawaban lokal terpisah di `localGuide.ts`, sehingga penyedia jawaban backend dapat disambungkan melalui lapisan ini dan state konsultasi tanpa mengganti tampilan.
 - Panel cuaca menampilkan status belum terhubung. Lokasi profil sudah tersedia sebagai masukan layanan cuaca kelak.
 - Jadwal berulang setiap hari. Tanda pengingat hanya tampil di beranda saat aplikasi dibuka dan diaktifkan; belum ada push notification.
-- Profil, jadwal, jurnal, poin, dan percakapan belum tersinkron antarperangkat. Penyimpanan penuh atau diblokir ditampilkan kepada pengguna, dan aplikasi tetap dapat digunakan sementara.
+- Profil, jadwal, jurnal, poin, dan percakapan dimuat dari MySQL setelah login; kegagalan backend ditampilkan dan tidak memberi akses luring ke data pribadi.
 - Kunci AI/cuaca dan autentikasi produksi harus berada di backend. Jangan menaruh rahasia pada variabel `VITE_*` atau browser.
 
 Hasil pemeriksaan frontend dan alur yang diperiksa tercatat di [docs/frontend-verification.md](docs/frontend-verification.md).
@@ -71,7 +84,7 @@ Arsitektur responsif aplikasi anggota dan CMS, matriks ukuran layar, hasil uji b
 
 ## Rancangan backend dan database MySQL (tahap pengembangan)
 
-> **Status:** API katalog publik, CMS internal, autentikasi administrator, dan katalog dinamis frontend sudah diimplementasikan. Tabel sesi perlu ditambahkan secara manual menggunakan skrip 03. Profil dan aktivitas KWT tetap memakai `localStorage`.
+> **Status:** API katalog publik, CMS, autentikasi admin dan anggota, serta persistensi pribadi tersedia. Skrip 03 dan 04 adalah perluasan manual. Bagian pemasangan schema/seed berikut hanya untuk database baru yang kosong, bukan database pengembangan yang sudah berisi data.
 
 Tujuan desain: anggota KWT Dewi Sri dapat mencatat budidaya dan riwayatnya; admin pengembang dapat menambah kategori/jenis (misalnya **Ayam Jantan**), mengganti gambar sesuai kondisi, mengelola tindakan dan panduan; integrasi Tanya Tani nantinya melalui backend ke layanan RAG. API key dan password **tidak** disimpan dalam repository atau pengaturan publik.
 
@@ -123,6 +136,9 @@ erDiagram
     USERS ||--o{ USER_ROLES : memiliki
     ROLES ||--o{ USER_ROLES : memberikan
     USERS ||--o| USER_PREFERENCES : mengatur
+    USERS ||--o{ ADMIN_SESSIONS : sesi_admin
+    USERS ||--o{ MEMBER_SESSIONS : sesi_anggota
+    USERS |o--o{ USERS : membuat_anggota
     USERS ||--o{ USER_CULTIVATIONS : merawat
     SPECIES ||--o{ USER_CULTIVATIONS : menjadi_jenis
     USER_CULTIVATIONS ||--o{ CARE_SCHEDULES : menjadwalkan
@@ -138,7 +154,7 @@ erDiagram
 
 Satu anggota dapat membuat **lebih dari satu `user_cultivations`** untuk jenis yang sama (misalnya dua area kangkung). Satu kegiatan harian tercatat di `care_logs`; penyelesaian jadwal ditentukan dari `schedule_id` + `local_date`. `point_transactions` mencatat hadiah poin terpisah dari total kegiatan yang menentukan peringkat. Chat dan metadata hasil RAG disimpan di MySQL, sedangkan model dan vector store dapat dikelola oleh penyedia RAG terpisah.
 
-### Inventaris 19 tabel
+### Inventaris 21 tabel setelah perluasan manual
 
 | Kelompok | Tabel |
 | --- | --- |
@@ -147,6 +163,7 @@ Satu anggota dapat membuat **lebih dari satu `user_cultivations`** untuk jenis y
 | Aktivitas anggota (4) | `user_cultivations`, `care_schedules`, `care_logs`, `point_transactions` |
 | Konsultasi (2) | `chat_conversations`, `chat_messages` |
 | Pengaturan dan jejak admin (2) | `app_settings`, `admin_audit_logs` |
+| Sesi terpisah (2) | `admin_sessions`, `member_sessions` |
 
 ### Aturan perubahan struktur selama PKM
 
@@ -162,5 +179,5 @@ Satu anggota dapat membuat **lebih dari satu `user_cultivations`** untuk jenis y
 - `species_care_actions.species_id` harus sesuai dengan `user_cultivations.species_id` pada jadwal/jurnal; **backend wajib memvalidasi kesesuaian tersebut** karena foreign key masing-masing saja belum menjamin keduanya sejenis.
 - Seluruh kunci rahasia RAG/cuaca disimpan di **environment server Node.js** (misalnya `.env` yang di-`gitignore`), bukan di `app_settings`, `VITE_*`, atau browser.
 - Metadata gambar disimpan di `media_assets`, sedangkan file fisiknya di penyimpanan server. Aset katalog bersifat publik; foto konsultasi pribadi harus mempunyai kontrol akses.
-- Data lama `localStorage` perlu direncanakan migrasinya setelah API siap; jangan langsung menghapus data browser. Akun administrator diprovisi melalui CLI; **tidak ada password atau akun admin dummy di seed**.
+- Data lama `localStorage` dipertahankan tanpa dimuat ke akun; verifikasi pemilik diperlukan sebelum migrasi yang dibantu pengembang. Akun administrator diprovisi melalui CLI; **tidak ada password atau akun admin dummy di seed**.
 - Perubahan jenis Pet dari CMS kini dibaca oleh katalog dinamis. Slug menjadi identitas progres lokal; pertahankan slug setelah publikasi. Pet yang diarsipkan tidak ditawarkan untuk pilihan baru, sementara riwayat dan referensi tetap disimpan.
