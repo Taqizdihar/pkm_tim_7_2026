@@ -24,14 +24,14 @@ test('phone normalization preserves zero; identifiers and provisioning inputs ar
 });
 
 async function fixture() {
-  const users:any[]=[{id:'10',name:'Anggota A',phone_number:'081234567890',username:'anggota.a',email:'a@example.test',status:'active',must_change_password:1,password_hash:await hashPassword('frasa awal anggota a'),role:'member',expired:0}];
+  const users:any[]=[{id:'10',name:'Anggota A',phone_number:'081234567890',username:'anggota.a',email:'a@example.test',status:'active',must_change_password:1,password_hash:await hashPassword('frasa awal anggota a'),role:'member',expired:'0'}];
   const sessions=new Map<string,any>();const audits:any[]=[];let tx=0,rollback=0,preferences=0,failAudit=false;
   let snapshot:any;
   const execute=async(sql:string,p:any[]=[])=>{
     if(sql.includes("SELECT id FROM roles WHERE code='member'"))return [[{id:'77'}]];
     if(sql.startsWith('INSERT INTO users')) {
       if(users.some(u=>['phone_number','username','email'].some((k,i)=>p[i+1]&&u[k]===p[i+1])))throw Object.assign(Error(),{code:'ER_DUP_ENTRY'});
-      const u={id:String(users.length+10),name:p[0],phone_number:p[1],username:p[2],email:p[3],password_hash:p[4],status:p[5],must_change_password:p[6],created_by:p[7]};users.push(u);return [{insertId:Number(u.id)}];
+      const u={id:String(users.length+10),name:p[0],phone_number:p[1],username:p[2],email:p[3],password_hash:p[4],status:p[5],must_change_password:p[6],created_by:p[7],expired:'0'};users.push(u);return [{insertId:Number(u.id)}];
     }
     if(sql.startsWith('INSERT INTO user_roles')){users.find(u=>u.id===p[0]).role=p[1]==='77'?'member':'admin';return [{}];}
     if(sql.startsWith('INSERT INTO user_preferences')){preferences++;return [{}];}
@@ -66,13 +66,26 @@ const origin='http://localhost:3000';
 const credentials={identifier:'081234567890',password:'frasa awal anggota a'};
 const cookieOf=(r:any)=>r.headers['set-cookie'][0].split(';')[0];
 
+test('member login handles MySQL BIGINT expiry flags as strings and numbers',async()=>{
+  const f=await fixture();
+  for(const expired of ['0',0]) {
+    f.users[0].expired=expired;
+    const session=await f.auth.login(credentials.identifier,credentials.password);
+    assert.equal((await f.auth.authenticate(session.token))?.id,'10');
+  }
+  for(const expired of ['1',1]) {
+    f.users[0].expired=expired;
+    await assert.rejects(f.auth.login(credentials.identifier,credentials.password),{status:401,code:'INVALID_CREDENTIALS'});
+  }
+});
+
 test('member identifiers, generic denial, restricted session, CSRF, rotation, expiry and revocation',async()=>{
   const f=await fixture(),agent=request.agent(f.app);
   for(const identifier of ['081234567890','+62 812-3456-7890','ANGGOTA.A','A@EXAMPLE.TEST']){
     const r=await agent.post('/api/v1/auth/login').set('Origin',origin).send({...credentials,identifier});assert.equal(r.status,200);assert.equal(r.body.data.id,'10');assert.equal(r.body.data.password_hash,undefined);
   }
-  for(const change of [{status:'disabled'},{role:'admin'},{expired:1}]){
-    Object.assign(f.users[0],change);const r=await agent.post('/api/v1/auth/login').set('Origin',origin).send(credentials);assert.equal(r.status,401);assert.equal(r.body.error.code,'INVALID_CREDENTIALS');Object.assign(f.users[0],{status:'active',role:'member',expired:0});
+  for(const change of [{status:'disabled'},{role:'admin'},{expired:'1'}]){
+    Object.assign(f.users[0],change);const r=await agent.post('/api/v1/auth/login').set('Origin',origin).send(credentials);assert.equal(r.status,401);assert.equal(r.body.error.code,'INVALID_CREDENTIALS');Object.assign(f.users[0],{status:'active',role:'member',expired:'0'});
   }
   const r=await agent.post('/api/v1/auth/login').set('Origin',origin).send(credentials),cookie=cookieOf(r),csrf=r.body.data.csrfToken;
   assert.match(r.headers['set-cookie'][0],/HttpOnly/);assert.match(r.headers['set-cookie'][0],/Path=\/api\/v1;/);assert.ok(f.sessions.has(digest(cookie.split('=')[1])));

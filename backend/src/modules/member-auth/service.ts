@@ -47,7 +47,8 @@ export function createMemberAuth(pool: Pool, hours = 24) {
           FROM users u WHERE u.${key.column}=? AND ${ordinaryMember} FOR UPDATE`, [key.value]);
         const u = rows[0];
         const valid = await argon2.verify(u?.password_hash || await dummy, supplied).catch(() => false);
-        if (!u || !valid || u.status !== 'active' || u.expired) throw new HttpError(401,
+        // MySQL2 preserves computed BIGINT flags as strings alongside large account IDs.
+        if (!u || !valid || u.status !== 'active' || Number(u.expired) !== 0) throw new HttpError(401,
           'Nomor HP, username, email, atau kata sandi tidak sesuai. Jika akses bermasalah, hubungi pengelola KWT.', 'INVALID_CREDENTIALS');
         const session = await issue(db,u.id);
         await db.execute('UPDATE users SET last_login_at=UTC_TIMESTAMP(3) WHERE id=?', [u.id]);

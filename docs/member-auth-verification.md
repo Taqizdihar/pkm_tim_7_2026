@@ -56,13 +56,19 @@ Bila perluasan belum tersedia pada mesin lain, buka **phpMyAdmin → dewi_sri �
 | Frontend unit | `npm test`: 20 lulus |
 | Frontend build | `npm run build` lulus |
 | Backend TypeScript | `npm run typecheck` lulus |
-| Backend unit/HTTP | `npm test`: 20 lulus, memakai mock SQL dan Argon2 nyata |
+| Backend unit/HTTP | `npm test`: 21 lulus, memakai mock SQL dan Argon2 nyata |
 | Backend build | `npm run build` lulus |
 | Browser | `npm run test:browser`: 30 lulus dalam 2,6 menit. Seluruh respons pribadi dan CMS dalam uji browser berupa fixture. Tidak ada uncaught page error pada skenario autentikasi/anggota yang diuji. |
 
 Uji backend meliputi normalisasi HP dan nol awal, login ketiga identitas, generic denial untuk role/status/expiry, cookie dan sesi, CSRF, limiter, password wajib ganti dan rotasi sesi, provisioning/role/default preferences, konflik identitas, rollback, reset tanpa rahasia dalam audit, nonaktif/aktif tanpa menghidupkan sesi lama, efek metrik, idempotensi perawatan dan jadwal, kepemilikan rekaman/media, penolakan field role/points/assistant, serta error schema/koneksi yang disanitasi. Uji bawaan CLI dan katalog tetap lulus.
 
 Penyesuaian minimum password menjadi 6 karakter dan penghapusan pilihan status pada pembuatan anggota diverifikasi ulang: 20 tes frontend, 20 tes backend, typecheck/build keduanya, dan 18 skenario browser terkait pada sembilan ukuran layar lulus. Tes memastikan 5 karakter ditolak, 6 karakter diterima untuk pembuatan/reset/perubahan password, akun baru aktif tanpa field status dari formulir, dan API menolak pembuatan dengan status nonaktif. Seluruh data uji tetap memakai fixture.
+
+### Koreksi pemeriksaan expiry saat login
+
+Pemeriksaan baca-saja pada MySQL lokal menemukan bahwa ekspresi SQL `expired` mempunyai tipe BIGINT. Dengan konfigurasi pool `supportBigNumbers` dan `bigNumberStrings`, mysql2 mengembalikan flag belum kedaluwarsa sebagai string `"0"`. Pemeriksaan truthiness sebelumnya salah menolaknya sebagai credential kedaluwarsa, walaupun akun aktif dan hanya mempunyai role member.
+
+Login sekarang membandingkan nilai numerik flag dengan nol, tanpa mengubah konfigurasi ID BIGINT. Fixture autentikasi meniru flag string tersebut. Regresi baru terbukti gagal sebelum perbaikan; sesudahnya, string/numerik nol diterima dan string/numerik satu tetap ditolak. Seluruh 21 tes backend, typecheck dan build lulus. Health database langsung mengembalikan 200. Diagnosis tidak mengubah akun atau password asli; login berpassword diuji dengan fixture, tanpa meminta atau menebak password anggota.
 
 Uji browser memakai Chromium melalui Microsoft Edge pada 320×568, 360×800, 390×844, 430×932, 768×1024, 1024×768, 1366×768, 1440×900, dan 1920×1080 untuk login, password dan CMS anggota. Layar aplikasi lainnya diperiksa pada 320/768/1440. Tangkapan layar login, password, dan CMS 390/1440 ditinjau visual. Tidak ada angka Lighthouse/Core Web Vitals yang diukur atau diklaim.
 
