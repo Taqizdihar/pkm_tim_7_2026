@@ -6,7 +6,7 @@ Akun anggota dibuat hanya oleh administrator melalui **Kelola Anggota KWT** (`/a
 
 Administrator tetap dibuat melalui CLI dan masuk di `/admin/login`. Cookie HttpOnly `dewi_admin` dan `dewi_member`, tabel sesi, serta token CSRF keduanya terpisah. Anggota tidak dapat memakai API admin dan sesi admin tidak membuka kebun anggota.
 
-Pengelola mengisi identitas dan kata sandi awal sedikitnya 15 karakter, lalu menyampaikannya secara pribadi. Akun baru secara default wajib mengganti kata sandi pada `/change-password`. Untuk anggota yang lupa kata sandi, gunakan **Atur Ulang Kata Sandi** di CMS; semua sesi lama dicabut. Belum ada pemulihan WhatsApp, SMS, atau email. Kata sandi anggota mendukung frasa 15–200 karakter tanpa aturan komposisi dan tanpa pemotongan atau pengubahan spasi.
+Pengelola mengisi identitas dan kata sandi awal sedikitnya 6 karakter, lalu menyampaikannya secara pribadi. Akun baru langsung aktif tanpa pilihan status pada formulir pembuatan, dan secara default wajib mengganti kata sandi pada `/change-password`. Untuk anggota yang lupa kata sandi, gunakan **Atur Ulang Kata Sandi** di CMS; semua sesi lama dicabut. Belum ada pemulihan WhatsApp, SMS, atau email. Kata sandi anggota mendukung frasa 6–200 karakter tanpa aturan komposisi dan tanpa pemotongan atau pengubahan spasi.
 
 Profil, preferensi, pilihan jenis dan progres Pet, jadwal, jurnal, hadiah harian, serta percakapan disimpan di MySQL. React menyimpan salinan di memori setelah pemeriksaan sesi. Server menentukan efek perawatan, tanggal Asia/Jakarta, poin, dan kepemilikan setiap rekaman. Foto pribadi disimpan di direktori privat server dan hanya tersedia lewat endpoint anggota yang memeriksa pemiliknya. Tanya Tani tetap panduan deterministik, tanpa penyedia AI eksternal.
 

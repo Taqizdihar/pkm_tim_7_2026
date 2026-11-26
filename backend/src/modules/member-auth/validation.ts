@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const id = z.string().regex(/^[1-9][0-9]{0,19}$/);
-export const password = z.string().min(15, 'Gunakan sedikitnya 15 karakter.').max(200);
+export const password = z.string().min(6, 'Gunakan sedikitnya 6 karakter.').max(200);
 export function normalizePhone(value: string) {
   const clean = value.trim().replace(/[ -]/g, '');
   return clean.startsWith('+62') ? `0${clean.slice(3)}` : clean.startsWith('62') ? `0${clean.slice(2)}` : clean;
@@ -18,7 +18,7 @@ export const hasIdentifier = (v: z.infer<typeof identity>) => Boolean(v.phone_nu
 export const memberInput = identity.strict().refine(hasIdentifier, 'Isi nomor HP, username, atau email.');
 export const credential = z.object({ password, confirm_password: password, must_change_password: z.boolean().default(true) })
   .strict().refine(v => v.password === v.confirm_password, 'Konfirmasi kata sandi tidak sama.');
-export const createInput = identity.extend({ password, confirm_password: password, must_change_password: z.boolean().default(true) })
+export const createInput = identity.extend({ status: z.literal('active').default('active'), password, confirm_password: password, must_change_password: z.boolean().default(true) })
   .strict().refine(hasIdentifier, 'Isi nomor HP, username, atau email.')
   .refine(v => v.password === v.confirm_password, 'Konfirmasi kata sandi tidak sama.');
 export function loginIdentifier(value: string) {

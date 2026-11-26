@@ -18,7 +18,9 @@ test('phone normalization preserves zero; identifiers and provisioning inputs ar
   const base={name:'Fixture',password:'frasa yang cukup panjang',confirm_password:'frasa yang cukup panjang'};
   for(const identifier of [{phone_number:'081234567890'},{username:'bunda.sri'},{email:'sri@example.test'}])assert.ok(createInput.safeParse({...base,...identifier}).success);
   for(const extra of [{},{username:'081234567890'},{phone_number:'81234567890'},{username:'ada spasi'},{phone_number:'081234567890',role:'admin'},{email:'bukanemail'}])assert.equal(createInput.safeParse({...base,...extra}).success,false);
-  assert.equal(password.safeParse('pendek').success,false);assert.ok(password.safeParse('a'.repeat(200)).success);assert.equal(password.safeParse('a'.repeat(201)).success,false);
+  assert.equal(password.safeParse('abcde').success,false);assert.ok(password.safeParse('abcdef').success);assert.ok(password.safeParse('a'.repeat(200)).success);assert.equal(password.safeParse('a'.repeat(201)).success,false);
+  assert.equal(createInput.parse({...base,phone_number:'081234567890'}).status,'active');
+  assert.equal(createInput.safeParse({...base,phone_number:'081234567890',status:'disabled'}).success,false);
 });
 
 async function fixture() {
@@ -77,7 +79,7 @@ test('member identifiers, generic denial, restricted session, CSRF, rotation, ex
   assert.equal((await agent.get('/api/v1/member/private')).status,403);
   assert.equal((await agent.get('/api/v1/auth/me')).body.data.csrfToken,csrf);
   assert.equal((await agent.post('/api/v1/auth/change-password').set('Origin',origin).send({})).status,403);
-  const change=(current:string)=>agent.post('/api/v1/auth/change-password').set('Origin',origin).set('X-CSRF-Token',csrf).send({current_password:current,password:'frasa baru anggota a',confirm_password:'frasa baru anggota a'});
+  const change=(current:string)=>agent.post('/api/v1/auth/change-password').set('Origin',origin).set('X-CSRF-Token',csrf).send({current_password:current,password:'baru12',confirm_password:'baru12'});
   assert.equal((await change('salah')).status,422);
   const updated=await change(credentials.password);assert.equal(updated.status,200);assert.notEqual(cookieOf(updated),cookie);assert.equal(updated.body.data.must_change_password,0);
   assert.equal((await request(f.app).get('/api/v1/auth/me').set('Cookie',cookie)).status,401);
@@ -89,12 +91,16 @@ test('member identifiers, generic denial, restricted session, CSRF, rotation, ex
 
 test('CMS provisions only members, initializes preferences, rolls back audit failure and resets sessions without secrets',async()=>{
   const f=await fixture();
-  const create={name:'Anggota B',phone_number:'085712345678',password:'frasa panjang anggota b',confirm_password:'frasa panjang anggota b'};
+  const create={name:'Anggota B',phone_number:'085712345678',password:'awal12',confirm_password:'awal12'};
   const response=await request(f.app).post('/admin-members').send(create);assert.equal(response.status,201);assert.equal(f.users[1].role,'member');assert.equal(f.preferences,1);assert.match(f.users[1].password_hash,/^\$argon2id\$/);assert.equal(response.body.data.password_hash,undefined);assert.equal(f.users[1].created_by,'9');
+  assert.equal(response.body.data.status,'active');
+  assert.equal((await request(f.app).post('/admin-members').send({...create,status:'disabled'})).status,422);
+  assert.equal((await request(f.app).post('/admin-members').send({...create,password:'abcde',confirm_password:'abcde'})).status,422);
+  await f.auth.login(create.phone_number,create.password);
   assert.equal((await request(f.app).post('/admin-members').send(create)).status,409);
   assert.equal((await request(f.app).post('/admin-members').send({...create,role:'admin'})).status,422);
   const login=await request(f.app).post('/api/v1/auth/login').set('Origin',origin).send(credentials);const old=cookieOf(login);
-  const reset={password:'kata sandi pengganti baru',confirm_password:'kata sandi pengganti baru',must_change_password:false};
+  const reset={password:'ulang6',confirm_password:'ulang6',must_change_password:false};
   const result=await request(f.app).post('/admin-members/10/reset-password').send(reset);assert.equal(result.status,200);assert.equal(result.body.data,undefined);
   assert.equal((await request(f.app).get('/api/v1/auth/me').set('Cookie',old)).status,401);
   await assert.rejects(f.auth.login(credentials.identifier,credentials.password));

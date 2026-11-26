@@ -6,10 +6,10 @@ Tanggal pemeriksaan: 26 November 2026 (Asia/Jakarta).
 
 | Bagian | Hasil implementasi |
 | --- | --- |
-| Pendaftaran | Tertutup; hanya admin CMS dapat membuat anggota. Tidak ada endpoint register, tautan daftar, atau akses tamu. |
+| Pendaftaran | Tertutup; hanya admin CMS dapat membuat anggota. Akun baru selalu aktif, tanpa pilihan status pada formulir pembuatan. Tidak ada endpoint register, tautan daftar, atau akses tamu. |
 | Identitas login | Satu input menerima HP `08…`, username, atau email. Pasted `+62`/`62`, spasi dan tanda minus dinormalisasi. Username lowercase diawali huruf; kolom opsional disimpan NULL. |
 | CMS | `/admin/members`: daftar MySQL, pencarian empat identitas/nama, filter status, 20 baris per halaman, tambah, ubah, aktif/nonaktif, reset terpisah dengan konfirmasi. Akun dengan role selain member tidak dikelola. |
-| Password | Argon2id bersama modul admin; anggota 15–200 karakter, spasi/paste diperbolehkan, tanpa trim. Pembuatan/reset default wajib ganti; opsi pendampingan dapat menonaktifkannya. Tidak ada password bersama. |
+| Password | Argon2id bersama modul admin; anggota 6–200 karakter, spasi/paste diperbolehkan, tanpa trim. Pembuatan/reset default wajib ganti; opsi pendampingan dapat menonaktifkannya. Tidak ada password bersama. |
 | Reset darurat | Admin tidak perlu password lama. Password baru dikonfirmasi dan disampaikan privat; transaksi mengganti hash, mencabut sesi dan menulis audit tanpa kredensial. |
 | Login pertama | `/change-password`; backend hanya mengizinkan inspeksi sesi, perubahan password dan logout sampai selesai. Perubahan memerlukan password saat ini dan menerbitkan sesi/CSRF baru. |
 | Sesi | `member_sessions`, cookie `dewi_member`, Path `/api/v1`, HttpOnly, SameSite=Lax, Secure saat production. Token acak 256 bit hanya disimpan sebagai SHA-256. Default 24 jam, `MEMBER_SESSION_HOURS`. |
@@ -61,6 +61,8 @@ Bila perluasan belum tersedia pada mesin lain, buka **phpMyAdmin → dewi_sri �
 | Browser | `npm run test:browser`: 30 lulus dalam 2,6 menit. Seluruh respons pribadi dan CMS dalam uji browser berupa fixture. Tidak ada uncaught page error pada skenario autentikasi/anggota yang diuji. |
 
 Uji backend meliputi normalisasi HP dan nol awal, login ketiga identitas, generic denial untuk role/status/expiry, cookie dan sesi, CSRF, limiter, password wajib ganti dan rotasi sesi, provisioning/role/default preferences, konflik identitas, rollback, reset tanpa rahasia dalam audit, nonaktif/aktif tanpa menghidupkan sesi lama, efek metrik, idempotensi perawatan dan jadwal, kepemilikan rekaman/media, penolakan field role/points/assistant, serta error schema/koneksi yang disanitasi. Uji bawaan CLI dan katalog tetap lulus.
+
+Penyesuaian minimum password menjadi 6 karakter dan penghapusan pilihan status pada pembuatan anggota diverifikasi ulang: 20 tes frontend, 20 tes backend, typecheck/build keduanya, dan 18 skenario browser terkait pada sembilan ukuran layar lulus. Tes memastikan 5 karakter ditolak, 6 karakter diterima untuk pembuatan/reset/perubahan password, akun baru aktif tanpa field status dari formulir, dan API menolak pembuatan dengan status nonaktif. Seluruh data uji tetap memakai fixture.
 
 Uji browser memakai Chromium melalui Microsoft Edge pada 320×568, 360×800, 390×844, 430×932, 768×1024, 1024×768, 1366×768, 1440×900, dan 1920×1080 untuk login, password dan CMS anggota. Layar aplikasi lainnya diperiksa pada 320/768/1440. Tangkapan layar login, password, dan CMS 390/1440 ditinjau visual. Tidak ada angka Lighthouse/Core Web Vitals yang diukur atau diklaim.
 
