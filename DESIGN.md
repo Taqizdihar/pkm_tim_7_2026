@@ -34,6 +34,8 @@ Rincian implementasi dan hasil pemeriksaan ada di [`docs/responsive-ui-verificat
 
 Gerakan singkat menegaskan aksi pengguna—merawat, memilih peliharaan, atau membuka konsultasi. Hormati `prefers-reduced-motion`; animasi dekoratif tidak boleh menghalangi isi atau kontrol.
 
+Pada layar hingga 600 px, semua dialog menjadi panel bawah yang meluncur naik saat dibuka. Pegangan di atas panel dapat ditarik ke bawah untuk menutup; tarikan pendek mengembalikan panel ke posisinya. Isi tetap dapat digulir, dan tarikan pada isi hanya mengambil alih saat posisi gulir berada di atas. Escape, tombol tutup, fokus keyboard, dan preferensi pengurangan gerak tetap didukung. Dialog pada layar lebih lebar tetap berada di tengah.
+
 ## Kejujuran produk
 
 Data cuaca contoh, sesi lokal, saran berbasis aturan, dan diagnosis foto simulasi harus diberi label yang jujur sampai penyedia layanan benar-benar tersambung. Jangan menyatakan email terkirim, akun terverifikasi, cuaca langsung, atau AI memeriksa foto tanpa layanan tersebut.

@@ -27,7 +27,7 @@ function MemberEditor({mode,onClose,onSaved}:{mode:NonNullable<Mode>;onClose:()=
   const [error,setError]=useState(''),[busy,setBusy]=useState(false),[show,setShow]=useState(false);
   const m=mode.member,creating=mode.kind==='create',reset=mode.kind==='reset',status=mode.kind==='status';
   const title=creating?'Tambah Anggota KWT':reset?'Atur Ulang Kata Sandi':status?`${m!.status==='active'?'Nonaktifkan':'Aktifkan'} anggota`:'Ubah anggota KWT';
-  return <Dialog labelledBy="member-dialog-title" onClose={()=>{if(!busy)onClose();}} className="member-admin-dialog"><div className="member-dialog-heading"><h2 id="member-dialog-title">{title}</h2><button type="button" aria-label="Tutup formulir anggota" disabled={busy} onClick={onClose}><X size={20}/></button></div>
+  return <Dialog labelledBy="member-dialog-title" onClose={()=>{if(!busy)onClose();}} dismissible={!busy} className="member-admin-dialog"><div className="member-dialog-heading"><h2 id="member-dialog-title">{title}</h2><button type="button" aria-label="Tutup formulir anggota" disabled={busy} onClick={onClose}><X size={20}/></button></div>
     {m&&<p><strong>{m.name}</strong><br/>{m.phone_number||m.username||m.email}</p>}
     {reset&&<p>Kata sandi lama tidak akan berlaku. Anggota harus masuk kembali menggunakan kata sandi baru yang Anda berikan.</p>}
     {status&&<p>{m!.status==='active'?'Anggota akan keluar dari semua sesi. Riwayat budidaya dan konsultasi tetap disimpan.':'Anggota dapat masuk kembali. Sesi lama tetap tidak berlaku.'}</p>}

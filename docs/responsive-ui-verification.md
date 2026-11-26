@@ -1,5 +1,19 @@
 # Verifikasi antarmuka responsif — 25 November 2026
 
+## Panel bawah — 26 November 2026
+
+Dialog bersama kini menjadi panel bawah selebar layar pada lebar hingga 600 px, termasuk pilihan spesies, perawatan, panduan, cuaca, editor jadwal, pemilih foto, informasi/pengaturan, konfirmasi hapus percakapan, serta formulir anggota CMS. Desktop tetap memakai dialog di tengah.
+
+Panel meluncur naik selama 280 ms saat dibuka. Pegangan atas mendukung mouse, pen, dan sentuhan; pada sentuhan, area isi noninteraktif juga bisa ditarik saat posisi gulir berada di atas. Tarikan yang cukup jauh atau cepat menutup panel dengan gerak turun 220 ms; tarikan pendek dan pembatalan gestur mengembalikannya selama 200 ms. Gerak langsung mengikuti pointer tanpa pembaruan state React per frame. Tidak ada dependensi animasi baru.
+
+Area gulir dan kontrol formulir tetap memakai interaksi native. Pegangan tetap terlihat saat isi digulir, mempunyai target 44 px dan dapat ditekan dengan keyboard. Escape/backdrop, perangkap fokus native, pengembalian fokus, dan penguncian gulir latar dipertahankan. `prefers-reduced-motion` menonaktifkan animasi otomatis; drag langsung tetap mengikuti tindakan pengguna. Formulir CMS menolak penutupan saat menyimpan. Perubahan ke layout desktop membatalkan drag dan membersihkan transform.
+
+Delapan skenario browser baru telah lulus secara terpisah: seluruh varian anggota pada 320/390 px, animasi masuk dan drag keluar, tarikan pendek/horizontal, Escape/backdrop/keyboard dan fokus, event sentuhan melalui CDP, scroll konten panjang, reduced motion, resize desktop, serta pencegahan tutup saat CMS menyimpan. Pengujian memakai fixture HTTP tanpa menulis ke MySQL. Tangkapan layar `.artifacts/sheet-beranda-care.png` dan `.artifacts/sheet-chat_ai-photo.png` ditinjau visual. Sentuhan diuji lewat emulasi Chromium/Edge, bukan perangkat fisik iOS/Android.
+
+Pemeriksaan regresi sesudah perubahan: `npm run lint`, 20 tes unit frontend, dan `npm run build` lulus; `npm run test:browser` meluluskan seluruh 38 skenario dalam 5,1 menit, mencakup alur anggota dan CMS yang sudah ada.
+
+Pemeriksaan desain: motif dan palet proyek dipertahankan; pegangan menandai arah drag dan gerak hanya menjelaskan pembukaan/penutupan panel. Kontrol native, fokus terlihat, target sentuh, scroll, pembatalan, dan error JavaScript diperiksa lewat skenario tersebut. Tidak membuat aset visual atau mengubah alur backend.
+
 ## Tata letak
 
 Aplikasi anggota memakai konten satu kolom dan navigasi bawah di ponsel. Pada 768 px, Beranda menempatkan pilihan spesies serta aksi perawatan di samping ringkasan jadwal dan progres. Pada 1024 px, navigasi berpindah ke sidebar 228 px (250 px mulai 1440 px), sementara area isi tetap dapat menyusut. Halaman Jadwal memiliki panel ringkasan di samping daftar pada desktop. Riwayat percakapan, Profil, Ubah profil, dan Perjalanan merawat memakai grid ketika ruang cukup; jurnal tetap memakai lebar baca terukur. Welcome memakai komposisi terbelah pada desktop; formulir profil lokal tetap sempit dan mudah dibaca.

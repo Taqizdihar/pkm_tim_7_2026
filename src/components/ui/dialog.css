@@ -1,0 +1,40 @@
+.garden-dialog > .dialog-sheet-handle { display: none; }
+.garden-dialog[data-dragging="true"] { user-select: none; }
+
+@media (max-width: 600px) {
+  .garden-dialog[open][data-sheet="true"] {
+    width: 100%;
+    max-width: 600px;
+    margin: auto auto 0;
+    border-radius: 28px 28px 0 0;
+  }
+  .garden-dialog[open] > .dialog-sheet-handle {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: inherit;
+    color: #006a3e;
+    cursor: grab;
+    touch-action: none;
+    transform: none;
+  }
+  .garden-dialog > .dialog-sheet-handle span {
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: #6e8174;
+  }
+  .garden-dialog > .dialog-sheet-handle:hover span { background: #006a3e; }
+  .garden-dialog > .dialog-sheet-handle:active { cursor: grabbing; }
+  .garden-dialog > .dialog-sheet-handle:focus-visible { outline: 3px solid #006a3e; outline-offset: -5px; }
+  .garden-dialog > .dialog-sheet-handle:disabled { cursor: not-allowed; opacity: .5; }
+}
