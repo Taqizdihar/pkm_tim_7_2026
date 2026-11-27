@@ -18,6 +18,8 @@ The actual local `dewi_sri` database was inspected read-only. Result: **21 table
 
 Apply [`database/06_multi_pet_management.sql`](database/06_multi_pet_management.sql) **once manually** using phpMyAdmin → dewi_sri → SQL → paste the file contents → Go. It changes two existing tables and creates no new tables. Do not rerun 01/02 or already applied 03/04/05. If a previous manual run partially succeeded, inspect Structure/Indexes and complete only missing ALTER clauses; do not blindly rerun the whole file.
 
+If phpMyAdmin reports **#1044 access denied to `information_schema`**, the statement is targeting the system metadata database rather than the application database. Select **dewi_sri** in the left sidebar, open its SQL tab, and paste the entire current file including `USE`. Both `ALTER TABLE` statements now explicitly name `dewi_sri`, so their target does not depend on the selected database. Do not grant write privileges on `information_schema`. The read-only check after this error still found all SQL 06 fields absent; the migration itself was not executed during this fix.
+
 | Table | Additions |
 | --- | --- |
 | `user_cultivations` | `pet_mode`, `quantity`, `location_label`, `ownership_confirmed_at`, `archived_at`, `archive_reason`, `create_request_id`, `create_request_hash` |
