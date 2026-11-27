@@ -21,6 +21,14 @@ Hangat, telaten, optimistis, dan akrab dengan keseharian tani Indonesia. Humor d
 
 Gunakan sans-serif bulat yang sudah tersedia di proyek, dengan bobot tegas untuk judul dan ukuran nyaman untuk isi. Aplikasi mengutamakan alur satu tangan di ponsel: navigasi bawah tetap mudah dijangkau, area sentuh lega, dan isi tidak tertutup bilah tetap. Pada layar lebar, pertahankan lebar baca yang terukur.
 
+### Multi-Pet
+
+Pet adalah budidaya nyata milik anggota; spesies adalah isi katalog bersama. Beranda mempertahankan habitat statis dan tiga aksi Rawat, Foto kondisi, Jadwal. Tab Tanaman/Ikan/Ayam hanya mengganti kategori. Tombol Pilih Pet memilih rekaman milik anggota; kategori kosong tidak menampilkan budidaya bawaan. Pet Saya berada di bawah Beranda, dengan pencarian nama/jenis/lokasi, filter kategori dan Aktif/Arsip. Nama Pet menjadi judul; jenis, mode, jumlah dan lokasi memberi konteks yang membedakan Pet sejenis.
+
+Formulir tambah memakai kategori lalu jenis terbit, nama saran yang dapat diubah, mode, jumlah, lokasi opsional dan konfirmasi kepemilikan. Rawat Bersama membatasi satu jenis dan membedakan jumlah rekaman Pet dari jumlah tanaman/ekor. Tombol simpan melaporkan sukses sesudah respons backend. Indikator dilabeli catatan virtual. Ilustrasi yang tersedia tetap digunakan; jenis tanpa aset memakai simbol kategori dan nama yang benar. `PetVisual` terpisah dari kepemilikan agar renderer Layered 2D dapat ditambahkan kelak; tidak ada animasi baru pada tahap ini.
+
+Daftar Pet memakai satu kolom di ponsel, dua pada layar menengah dan tiga ketika ruang cukup. Dialog mengikuti panel bawah yang sama, bergulir pada konten panjang dan terpusat pada desktop. Semua pilihan memakai input native, label terlihat, tombol minimal 44 px dan fokus keyboard. Konsep individual/kelompok dan kebijakan kegiatan bersama masih menunggu tinjauan pembimbing PKM.
+
 ### Tata letak adaptif
 
 - Di bawah 768 px, layar anggota memakai alur satu kolom dan navigasi bawah selebar ruang yang tersedia, termasuk ponsel lanskap.
@@ -46,7 +54,7 @@ Data cuaca contoh, sesi lokal, saran berbasis aturan, dan diagnosis foto simulas
 
 ## Pengguna dan navigasi
 
-Fokus penggunaan pada ponsel, termasuk pengguna ibu-ibu yang memerlukan tulisan nyaman, label langsung, dan area sentuh besar. Empat tujuan utama selalu terlihat: Beranda, Jadwal, Tanya Tani, dan Profil. Rawat, Foto kondisi, dan Jadwal mendapat akses yang sama jelasnya di beranda. Tombol kategori Tanaman, Ikan, dan Ayam membuka pilihan jenis.
+Fokus penggunaan pada ponsel, termasuk pengguna ibu-ibu yang memerlukan tulisan nyaman, label langsung, dan area sentuh besar. Empat tujuan utama selalu terlihat: Beranda, Jadwal, Tanya Tani, dan Profil. Rawat, Foto kondisi, dan Jadwal mendapat akses yang sama jelasnya di beranda. Tombol kategori Tanaman, Ikan, dan Ayam mengganti kategori tanpa membuat Pet; Pilih Pet membuka daftar budidaya milik anggota.
 
 Gunakan bahasa Indonesia yang singkat dan sopan. Tulisan isi memakai ukuran sekitar 16 px, dapat diperbesar melalui Profil. Kontrol sentuh minimal 44 px. Dialog menahan fokus, dapat ditutup dengan Escape, dan mengembalikan fokus ke pembukanya.
 

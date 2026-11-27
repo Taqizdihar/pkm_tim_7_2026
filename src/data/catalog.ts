@@ -36,7 +36,7 @@ export function applyCatalog(catalog: Catalog, fresh = true) {
       slot: a.slotKey as CareAction['slot'], label: a.name, description: a.speciesDescription || a.description || '',
       icon: ['water','plant','sun','feed','clean'].includes(a.iconKey) ? a.iconKey as CareAction['icon'] : 'plant', effects: a.effects,
     }));
-    const next: Species = { id: item.slug, label: item.name, image: image || existing?.image || SPECIES[type][0].image,
+    const next: Species = { id: item.slug, label: item.name, image: image || existing?.image || '',
       wiltedImage, stateImages:item.media.reduce<Record<string,string>>((images,m)=>{if(safeImage(m.storagePath)&&!images[m.stateKey])images[m.stateKey]=m.storagePath;return images;},{}), note: item.shortNote || '', group: groups[catalog.categories.find(c => c.id === item.categoryId)?.slug || ''] || (type === 'koki' ? 'ikan' : type === 'kuning' ? 'unggas' : 'sayuran'),
       available: item.available !== false, careActions: actions, guides: item.guides };
     if (existing) Object.assign(existing,next); else SPECIES[type].push(next);

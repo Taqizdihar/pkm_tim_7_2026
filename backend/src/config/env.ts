@@ -15,6 +15,7 @@ const schema = z.object({
   SESSION_HOURS: z.coerce.number().int().min(1).max(24).default(8),
   MEMBER_SESSION_HOURS: z.coerce.number().int().min(1).max(168).default(24),
   UPLOAD_DIR: z.string().min(1).default('storage/uploads'),
+  BULK_CARE_MAX_PETS: z.coerce.number().int().min(1).max(100).default(50),
   AI_ENABLED: boolean.default(true),
   AI_PRIMARY_PROVIDER: z.enum(['gemini', 'rag', 'local']).default('gemini'),
   AI_FALLBACK_PROVIDER: z.enum(['gemini', 'local']).default('local'),

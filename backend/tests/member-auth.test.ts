@@ -134,22 +134,11 @@ test('member login rate limiter, origin checks and Secure production cookie',asy
 });
 
 test('ownership, CMS effects, idempotent care and server-calculated progress',async()=>{
-  const logs:any[]=[];let metrics={stat1:30,stat2:10,stat3:25};
-  const db={query:async(sql:string,p:any[])=>{
-    if(sql.startsWith('SELECT * FROM user_cultivations'))return [[...(p[0]==='1'&&p[1]==='A'?[{id:'1',user_id:'A',species_id:'3',metrics_json:metrics}]:[])]];
-    if(sql.includes('sca.effect_config_json'))return [[{id:'5',effect_config_json:{stat2:30,stat3:15}}]];
-    if(sql.includes('FROM care_schedules'))return [[]];
-    if(sql.includes('SELECT category_id FROM species'))return [[{category_id:'3'}]];
-    if(sql.includes('FROM cultivation_categories'))return [[{id:'3',parent_id:null,habitat_key:'kebun'}]];
-    if(sql.startsWith('SELECT id FROM care_logs'))return [logs.filter(l=>l.event===p[1])];
-    if(sql.includes('COUNT(*) AS total'))return [[{total:logs.length}]];
-    if(sql.includes('SUM(points)'))return [[{total:5}]];
-    if(sql.includes('source_reference AS day'))return [[{day:new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(new Date())}]];
-    throw Error(`Unhandled: ${sql}`);
-  },execute:async(sql:string,p:any[])=>{if(sql.startsWith('UPDATE user_cultivations'))metrics=JSON.parse(p[0]);else if(sql.startsWith('INSERT INTO care_logs'))logs.push({id:'7',event:p[3]});else throw Error(sql);return [{}];}} as any;
-  await assert.rejects(owned(db,'user_cultivations','1','B'),/tidak ditemukan/);
-  await performCare(db,'A','1','action1','event-1');await performCare(db,'A','1','action1','event-1');
-  assert.equal(logs.length,1);assert.equal(metrics.stat2,40);assert.equal(metrics.stat3,40);
+  const {petFixture}=await import('./pet-fixture.js');const {createPet,createPetInput}=await import('../src/modules/member/pets.js');
+  const f=petFixture(),key=await createPet(f.db,'1',createPetInput.parse({nickname:'Sawi depan',species_slug:'sawi',pet_mode:'individual',quantity:1,ownership_confirmed:true,client_request_id:'123e4567-e89b-42d3-a456-426614174000'}));
+  await assert.rejects(owned(f.db,'user_cultivations',key,'2'),/tidak ditemukan/);
+  await performCare(f.db,'1',key,'action1','event-1');await performCare(f.db,'1',key,'action1','event-1');
+  assert.equal(f.state.logs.length,1);assert.equal(f.state.pets[0].metrics_json.stat2,40);
   assert.deepEqual(applyEffects({stat1:99,stat2:0,stat3:20},{stat1:35,stat2:-30,stat3:200}),{stat1:100,stat2:0,stat3:100});
-  const p=await progress(db,'A');assert.equal(p.totalCareCount,1);assert.equal(p.totalPoints,5);assert.equal(p.streakDays,1);assert.equal(p.level,1);
+  const p=await progress(f.db,'1');assert.equal(p.totalCareCount,1);assert.equal(p.totalPoints,5);assert.equal(p.streakDays,1);assert.equal(p.level,1);
 });

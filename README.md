@@ -1,5 +1,22 @@
 # Dewi Sri
 
+## Multi-Pet: budidaya nyata milik anggota
+
+**Konsep sementara untuk ditinjau pembimbing PKM.** Jenis dalam **Katalog Pet & Kategori** berbeda dari Pet milik anggota. Identitas Pet adalah `user_cultivations.id` (string BIGINT); anggota dapat membuat beberapa Pet sejenis dengan nama, lokasi, metrik, jadwal, dan riwayat terpisah. Pet individual berjumlah satu; kelompok dapat berjumlah 1–1.000.000 tanaman atau ekor. Akun baru tidak mendapat Pet otomatis.
+
+Buka **Beranda → Pet Saya** (`/?screen=pet_saya`) untuk menambah, meninjau, mengubah, mengarsipkan, atau memulihkan Pet. Pembuatan memerlukan konfirmasi bahwa anggota benar-benar memiliki atau merawat budidayanya. Catatan lama berlabel **Perlu konfirmasi**; tinjau baris yang sama sebelum mencatat perawatan baru. Indikator dan ilustrasi menggambarkan catatan virtual, bukan diagnosis kondisi nyata.
+
+**Rawat Bersama** mencatat satu tindakan untuk Pet sejenis yang dipilih dan dikonfirmasi. Tiga Pet (kelompok 12 ayam dan dua ayam individual) mewakili 14 ekor, menghasilkan tiga log dan satu kegiatan untuk peringkat. Jumlah fisik tidak menggandakan efek atau poin. Jurnal menyimpan nama/jumlah saat perawatan, mengelompokkan batch lengkap, dan memuat 20 kegiatan per halaman. Jadwal terikat ID Pet, bukan slug jenis. Arsip menonaktifkan jadwal tanpa menghapus riwayat; pemulihan tidak mengaktifkan jadwal otomatis.
+
+**Aktivasi database lokal:** pemeriksaan baca-saja pada 27 November 2026 menemukan 21 tabel, tetapi kolom/index/constraint Multi-Pet belum tersedia. Terapkan **sekali secara manual** [`06_multi_pet_management.sql`](docs/database/06_multi_pet_management.sql) melalui **phpMyAdmin → dewi_sri → SQL → tempel isi berkas → Go**. Jangan jalankan ulang schema/seed atau skrip 03–05 yang sudah diterapkan. Tidak ada migrasi yang dijalankan otomatis. Untuk memeriksa lagi:
+
+```powershell
+Set-Location backend
+npm run schema:multi-pet
+```
+
+`ready: false` berarti fitur Pet belum siap; autentikasi, profil, katalog dan konsultasi umum tetap memakai layanan yang ada. Panduan API, startup Windows, skema, batas verifikasi dan skenario manual ada di [`docs/multi-pet-verification.md`](docs/multi-pet-verification.md).
+
 ## Aplikasi tertutup anggota KWT
 
 Akun anggota dibuat hanya oleh administrator melalui **Kelola Anggota KWT** (`/admin/members`). Tidak tersedia pendaftaran publik atau akses tamu. Anggota masuk di `/login` menggunakan nomor HP domestik `08…`, username, atau email. Nomor tetap berupa string; spasi/tanda minus dan awalan `+62`/`62` dinormalisasi ke awalan `0`. Email dan username opsional bila nomor HP tersedia.
@@ -56,15 +73,15 @@ npm run build
 
 | Lokasi | Tanggung jawab |
 | --- | --- |
-| `src/App.tsx` | Navigasi, penggabungan state, dan aksi aplikasi |
-| `src/components/garden/` | Pemilih kegiatan, panduan, dan editor jadwal |
+| `src/App.tsx` | Sesi dan batas autentikasi anggota |
+| `src/features/pets/` | Workspace Pet berbasis ID, formulir, care/bulk, jadwal dan jurnal |
+| `src/components/garden/` | Ikon aksi beranda yang dipakai bersama |
 | `src/data/species.ts` | Nama, kelompok, dan aset setiap jenis |
 | `src/data/care.ts` | Label dan aksi perawatan yang dipakai bersama |
 | `src/features/consultation/localGuide.ts` | Jawaban teks dan panduan foto berbasis pilihan pengguna |
 | `src/hooks/usePersistentState.ts` | State browser dengan penanganan kegagalan penyimpanan |
-| `src/utils/gardenState.ts` | Validasi profil dan progres setiap spesies |
-| `src/utils/careSchedule.ts` | Jadwal, migrasi format lama, dan penyelesaian harian |
-| `src/utils/careJournal.ts` | Catatan kegiatan yang benar-benar ditekan pengguna |
+| `src/utils/gardenState.ts` | Validator prototipe lama; tidak membuat state Pet aktif |
+| `src/utils/careSchedule.ts`, `src/utils/careJournal.ts` | Validator format prototipe untuk pengujian historis; alur aktif memakai DTO API berbasis ID |
 | `src/utils/chatStorage.ts` | Validasi dan penyimpanan percakapan |
 | `src/styles/` | Fondasi visual dan CSS per kelompok halaman |
 
@@ -72,11 +89,11 @@ npm run build
 
 ## Menambah jenis dan aset
 
-1. Buka **Kelola Pet & Kategori** pada CMS, buat jenis dengan kategori yang sesuai, lalu atur tindakan, ilustrasi, dan status penerbitannya.
+1. Buka **Katalog Pet & Kategori** pada CMS, buat jenis dengan kategori yang sesuai, lalu atur tindakan, ilustrasi, dan status penerbitannya.
 2. Lengkapi panduan pada **Panduan Budidaya**. Jenis baru dimuat dari API tanpa mengubah union TypeScript.
 3. Untuk aset bawaan yang disertakan dalam kode, simpan di `public/assets/generated/` dan catat prompt pada `prompts.json`. Gunakan WebP ringan; sumber PNG boleh disimpan.
 
-Progres dan jadwal disimpan pada rekaman budidaya per akun dan spesies. Pemilihan kembali jenis memakai rekaman yang sama; schema tetap mendukung beberapa rekaman budidaya sejenis kelak. Data prototipe lama tidak diimpor otomatis. Semua tanggal harian memakai Asia/Jakarta.
+Progres dan jadwal disimpan per ID Pet milik anggota. Jenis katalog yang baru terbit tersedia pada formulir **Pet Saya → Tambah Pet**, tanpa membuat Pet secara otomatis. Beberapa Pet sejenis dapat memiliki metrik dan jadwal masing-masing. Data prototipe lama tidak diimpor otomatis. Semua tanggal harian memakai Asia/Jakarta.
 
 ## Batas frontend dan titik integrasi
 
@@ -95,7 +112,7 @@ Arsitektur responsif aplikasi anggota dan CMS, matriks ukuran layar, hasil uji b
 
 ## Rancangan backend dan database MySQL (tahap pengembangan)
 
-> **Status:** API katalog publik, CMS, autentikasi admin dan anggota, serta persistensi pribadi tersedia. Skrip 03, 04, dan 05 adalah perluasan manual. Bagian pemasangan schema/seed berikut hanya untuk database baru yang kosong, bukan database pengembangan yang sudah berisi data.
+> **Status:** API katalog publik, CMS, autentikasi admin dan anggota, serta persistensi pribadi tersedia. Skrip 03–06 adalah perluasan manual. Bagian pemasangan schema/seed berikut hanya untuk database baru yang kosong, bukan database pengembangan yang sudah berisi data.
 
 Tujuan desain: anggota KWT Dewi Sri dapat mencatat budidaya dan riwayatnya; admin pengembang dapat menambah kategori/jenis (misalnya **Ayam Jantan**), mengganti gambar sesuai kondisi, mengelola tindakan dan panduan; Tanya Tani memakai adapter backend Gemini dengan batas integrasi RAG untuk tahap berikutnya. API key dan password **tidak** disimpan dalam repository atau pengaturan publik.
 
@@ -107,6 +124,10 @@ Database **`dewi_sri` sudah dibuat secara manual** melalui phpMyAdmin. Karena it
 | --- | --- | --- |
 | 1 | [`docs/database/01_schema.sql`](docs/database/01_schema.sql) | **DDL:** 19 tabel, foreign key, unique key, indeks, dan tipe data |
 | 2 | [`docs/database/02_seed.sql`](docs/database/02_seed.sql) | **DML:** 3 role, 6 kategori, 11 jenis budidaya, 8 tindakan, 33 hubungan tindakan per jenis, dan referensi 12 aset |
+| 3 | [`docs/database/03_admin_sessions.sql`](docs/database/03_admin_sessions.sql) | Sesi admin; total 20 tabel |
+| 4 | [`docs/database/04_member_auth.sql`](docs/database/04_member_auth.sql) | Identitas dan sesi anggota; total 21 tabel |
+| 5 | [`docs/database/05_ai_consultation.sql`](docs/database/05_ai_consultation.sql) | Kolom/index konsultasi AI; tetap 21 tabel |
+| 6 | [`docs/database/06_multi_pet_management.sql`](docs/database/06_multi_pet_management.sql) | Identitas individual/kelompok, kepemilikan dan snapshot batch; tetap 21 tabel |
 
 **Cara menjalankan:**
 
@@ -163,7 +184,7 @@ erDiagram
     MEDIA_ASSETS |o--o{ CHAT_MESSAGES : melampirkan
 ```
 
-Satu anggota dapat membuat **lebih dari satu `user_cultivations`** untuk jenis yang sama (misalnya dua area kangkung). Satu kegiatan harian tercatat di `care_logs`; penyelesaian jadwal ditentukan dari `schedule_id` + `local_date`. `point_transactions` mencatat hadiah poin terpisah dari total kegiatan yang menentukan peringkat. Chat dan metadata hasil RAG disimpan di MySQL, sedangkan model dan vector store dapat dikelola oleh penyedia RAG terpisah.
+Satu anggota dapat membuat **lebih dari satu `user_cultivations`** untuk jenis yang sama. Setiap baris memiliki mode, jumlah, nama, lokasi dan konfirmasi kepemilikan sendiri. `care_logs.batch_id` menghubungkan beberapa log Rawat Bersama sebagai satu kegiatan; tidak ada tabel batch baru. Snapshot `pet_name_at_care` dan `quantity_at_care` tidak mengikuti perubahan nama/jumlah saat ini. Penyelesaian jadwal ditentukan dari `schedule_id` + `local_date` Jakarta. `point_transactions` tetap mencatat hadiah harian terpisah. Metadata provider AI dan percakapan disimpan di MySQL; adapter RAG menunggu kontrak integrasi.
 
 ### Inventaris 21 tabel setelah perluasan manual
 
@@ -191,4 +212,4 @@ Satu anggota dapat membuat **lebih dari satu `user_cultivations`** untuk jenis y
 - Seluruh kunci rahasia RAG/cuaca disimpan di **environment server Node.js** (misalnya `.env` yang di-`gitignore`), bukan di `app_settings`, `VITE_*`, atau browser.
 - Metadata gambar disimpan di `media_assets`, sedangkan file fisiknya di penyimpanan server. Aset katalog bersifat publik; foto konsultasi pribadi harus mempunyai kontrol akses.
 - Data lama `localStorage` dipertahankan tanpa dimuat ke akun; verifikasi pemilik diperlukan sebelum migrasi yang dibantu pengembang. Akun administrator diprovisi melalui CLI; **tidak ada password atau akun admin dummy di seed**.
-- Perubahan jenis Pet dari CMS kini dibaca oleh katalog dinamis. Slug menjadi identitas progres lokal; pertahankan slug setelah publikasi. Pet yang diarsipkan tidak ditawarkan untuk pilihan baru, sementara riwayat dan referensi tetap disimpan.
+- Jenis CMS dibaca melalui katalog dinamis. Slug hanya mengidentifikasi jenis; progres pribadi dan jadwal menggunakan ID cultivation. Jenis katalog arsip tidak ditawarkan untuk pembuatan baru; identitas Pet lama, referensi media dan riwayatnya tetap tersimpan.

@@ -6,6 +6,7 @@ import { adminCatalog, resources, idSchema } from './catalog.js';
 import { saveMedia } from './media.js';
 import { createAI, type AIService } from '../../integrations/ai/router.js';
 import rateLimit from 'express-rate-limit';
+import {petSummary} from './member-pets.js';
 
 export function adminRouter(pool: Pool, uploadRoot: string,ai:AIService=createAI()) {
   const router = Router();
@@ -16,7 +17,7 @@ export function adminRouter(pool: Pool, uploadRoot: string,ai:AIService=createAI
     z.object({}).strict().parse(req.body);
     res.json({success:true,data:await ai.testConnection()});
   });
-  router.get('/dashboard', async (_req,res) => res.json({ success: true, data: await catalog.dashboard() }));
+  router.get('/dashboard', async (_req,res) => res.json({ success: true, data: {...await catalog.dashboard(),memberPets:await petSummary(pool)} }));
   for (const resource of resources) {
     router.get(`/${resource}`, async (req,res) => {
       z.object({}).strict().parse(req.query);

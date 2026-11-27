@@ -1,5 +1,9 @@
 # Dewi Sri API and internal CMS
 
+Multi-Pet implementation and verification: [`../docs/multi-pet-verification.md`](../docs/multi-pet-verification.md). Apply `06_multi_pet_management.sql` once manually to the existing schema before using Pet mutations. `npm run schema:multi-pet` inspects metadata only; it never applies DDL, inserts records, or logs environment secrets. The 27 November 2026 local inspection reports 21 tables and missing SQL 06 fields/constraints. The feature reports unavailable until ready. Do not overwrite an existing `.env` or rerun schema/seed.
+
+`BULK_CARE_MAX_PETS=50` is optional server configuration (1–100). Physical group quantities accept integers 1–1,000,000; individual quantity is exactly one. All owned IDs are string BIGINTs. Catalog species and owned cultivations are separate resources. No default Pets are provisioned. A Pet ownership checkbox is required for creation/legacy review; Tanya Tani has no AI consent checkbox or demo member allowlist.
+
 Express 5 + TypeScript extends the existing MySQL database. Authentication uses Argon2id and database sessions; writes use validated parameterized SQL and transactions. Member profiles, cultivations, care, schedules, points and conversations are persisted in MySQL. Only ordinary members can use the member application; administrators retain their separate CLI and CMS authentication.
 
 ## First-time setup (Windows PowerShell)
@@ -61,9 +65,9 @@ Reset asks for email and a new masked password twice and revokes existing sessio
 - `/admin/guides`: plain text content, type, species, order, draft/publication/archive. React renders content as text, never unsanitized HTML.
 - `/admin/settings`: allowlisted `app_name` and `welcome_message` storage, plus safe AI diagnostics and an explicit connection test. Provider configuration stays in the server environment. The future RAG adapter and live weather remain unavailable.
 
-To add **Ayam Jantan**, create a draft with slug `ayam-jantan`, select **Ayam** (Kandang), and save. Upload a `normal` illustration, optionally `sick` or custom states, then assign care actions and save them. Set status to **Terbit** and save. Open or focus the public app at `http://localhost:3000/?screen=beranda`, choose **Ayam**, and select the new species. Published guides also appear in the species guide dialog. Archive removes a species from new selection while keeping database relationships and local history.
+To add **Ayam Jantan**, create a catalog draft with slug `ayam-jantan`, select **Ayam** (Kandang), and save. Upload a `normal` illustration, optionally `sick` or custom states, then assign care actions and save them. Set status to **Terbit** and save. In the member app, open **Pet Saya → Tambah Pet**, choose Ayam and the new species, enter the real Pet's identity and confirm ownership. Published guides appear in Pet details. Archiving a catalog species removes it from new creation while keeping existing Pet descriptors, relationships and history.
 
-Archive species/guides and deactivate categories/actions instead of deleting them. Member cultivation ownership uses species IDs; the frontend resolves current catalog slugs. Accounts are disabled rather than deleted. Members may delete their own conversations; deleted conversations no longer authorize access to their photos.
+Archive species/guides and deactivate categories/actions instead of deleting them. A member owns cultivation IDs, each with a species reference; multiple same-species IDs remain independent. Accounts are disabled rather than deleted. Members may delete their own conversations; deleted conversations no longer authorize access to their photos.
 
 ## Closed KWT membership
 
@@ -88,16 +92,22 @@ All responses retain `{ success, data }` / `{ success: false, error: { code, mes
 | Bootstrap | `GET /api/v1/member/bootstrap` |
 | Profile | `GET/PATCH /api/v1/member/profile`, `POST /profile/avatar` (multipart `image`) |
 | Preferences | `GET/PATCH /api/v1/member/preferences` |
-| Cultivation | `GET/POST /api/v1/member/cultivations` (`{slug}` selects/reuses), `PATCH /cultivations/:id` (nickname) |
+| Cultivation | `GET/POST /api/v1/member/cultivations`, `GET/PATCH /cultivations/:id`, `POST /:id/confirm`, `POST /:id/archive`, `POST /:id/restore`, `PUT /cultivations/selection`; payloads below |
 | Care | `POST /api/v1/member/cultivations/:id/care-actions` (`{slot,client_event_id}` UUID) |
+| Bulk Care | `POST /api/v1/member/cultivations/bulk-care` (`{cultivation_ids,care_action_id,client_event_id,confirmed:true}`) |
+| Read-only member Pets | `GET /api/v1/admin/members/:id/cultivations?page=1` (ordinary members only, 20 per page) |
 | Schedules | `GET/POST /api/v1/member/schedules`, `PATCH /schedules/:id`, `POST /schedules/:id/complete` (`{client_event_id}`) |
 | Journal/progress/reward | `GET /api/v1/member/journal`, `GET /progress`, `POST /rewards/daily` (empty object) |
 | Conversations | `GET/POST /api/v1/member/chat/conversations`, `GET/PATCH/DELETE /chat/conversations/:id`, `POST /chat/conversations/:id/messages` (`{content,media_id?,species?,intent?,client_request_id}`) |
 | Private media | `POST /api/v1/member/chat/media` (multipart `image`), `GET /api/v1/member/media/:filename` |
 
-Admin member lists accept `search`, `status` and `page` (20 per page). Conversation lists are 20 per page, messages are 100 per page, journal entries are 500 per page; those endpoints accept a bounded `offset`. Bootstrap excludes chat messages and photo bytes. CMS list rows never contain private consultation data or password hashes. Restricted sessions only allow `/auth/me`, `/auth/change-password` and `/auth/logout`.
+Admin member lists accept `search`, `status` and `page` (20 per page). Conversation lists are 20 per page, messages are 100 per page, and journal pages contain 20 whole logical activities; those endpoints accept a bounded `offset`. Bootstrap excludes chat messages and photo bytes. CMS list rows never contain private consultation data or password hashes. Restricted sessions only allow `/auth/me`, `/auth/change-password` and `/auth/logout`.
 
-Cultivation writes reuse the existing `user_cultivations` under the member row lock. Care effects come from active CMS action associations, are clamped to 0–100 and atomically create `care_logs`. A repeated `client_event_id` cannot apply effects twice; schedule completion also checks the scheduled date. Rank uses care count thresholds 3, 6, 10 and 20; daily reward grants 5 points once per server date through the unique ledger source. User preferences JSON contains only selected species and active category, never an application-state dump.
+Cultivation writes target explicit existing IDs under the authenticated member row lock. Creation uses `{species_slug,nickname,pet_mode,quantity,location_label?,ownership_confirmed:true,client_request_id}`; the UUID plus SHA-256 canonical payload is stored in SQL 06 fields. Editing accepts only `{nickname,pet_mode,quantity,location_label?}`. Confirmation adds `ownership_confirmed:true`. Selection accepts `{type,cultivation_id}` and preserves unrelated preferences. Archive accepts `{reason}` (`harvested`, `sold`, `no_longer_cared`, `died`, `incorrect`, `other`); restoration accepts `{}`. There is no hard-delete route. A creation retry returns the original row; changed payload with the same UUID returns 409.
+
+Care uses configured CMS effects clamped to 0–100, one log per Pet record, immutable name/quantity snapshots and global per-member event replay checks. A batch uses its UUID as `batch_id`; notes retain the canonical operation/target/action fingerprint. The short transaction locks the member row, validates all targets, updates all metrics and inserts all logs, rolling back everything on failure. Retry lookup precedes active/ownership/action checks so original successes still replay after rename/archive/catalog changes. No external AI call occurs in this transaction.
+
+Schedules use `{cultivation_id,slot,time,enabled}` and persistent schedule IDs. Disabling retains the row. The current Jakarta occurrence can complete only once; manual/bulk care completes at most one matching enabled pending schedule per Pet, ordered by schedule ID. A separate intentional physical activity may still add a log. Archive disables schedules transactionally; restore leaves them disabled. Rank counts distinct non-null batches plus non-batch rows, retaining thresholds 3/6/10/20. The daily ledger still grants 5 points once per server date. Creation, quantity and review grant no points. `preferences_json.selectedCultivations` maps category to owned IDs; the old `selected` slug map is read only as a deterministic fallback to existing records.
 
 Private JPEG/PNG/WebP uploads are decoded/re-encoded with Sharp (5 MB, 4096×4096 input bounds), use generated filenames, and have owner metadata in `media_assets`. Files live under `UPLOAD_DIR/private`, never the public media route or version control. Private GET also requires a current avatar/message reference. Unreferenced files are retained privately; automated garbage collection is not implemented. Keep the upload directory private at the web-server level and back it up alongside MySQL.
 

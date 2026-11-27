@@ -1,0 +1,36 @@
+import {useState} from 'react';
+import {ArrowLeft,Plus,Search,Users,MapPin} from 'lucide-react';
+import type {Cultivation} from '../../api/memberTypes.ts';
+import {PET_CATEGORIES,PetVisual,petDescription,quantityLabel} from './PetVisual.tsx';
+import {PetDialogFrame,archiveLabels,type PetMutation} from './PetDialogs.tsx';
+import type {PetType} from '../../types/index.ts';
+
+export function PetLibrary({pets,ready,onBack,onAdd,onDetail,onBulk}:{pets:Cultivation[];ready:boolean;onBack:()=>void;onAdd:()=>void;onDetail:(pet:Cultivation)=>void;onBulk:()=>void}){
+  const [status,setStatus]=useState<'active'|'archived'>('active'),[category,setCategory]=useState<PetType|''>(''),[search,setSearch]=useState('');
+  const visible=pets.filter(p=>p.status===status&&(!category||p.species.type===category)&&`${p.nickname} ${p.species.name} ${p.locationLabel}`.toLocaleLowerCase('id-ID').includes(search.toLocaleLowerCase('id-ID')));
+  const active=pets.filter(p=>p.status==='active'),individual=active.filter(p=>p.petMode==='individual').length;
+  return <main className="pet-library app-content"><header className="page-heading"><button className="icon-button" onClick={onBack} aria-label="Kembali ke beranda"><ArrowLeft/></button><div><span className="section-label">Budidaya milik Anda</span><h1>Pet Saya</h1><p>Tanaman dan hewan yang Anda rawat</p></div></header>
+    {!ready?<p className="status-note status-note--warning">Pengelolaan Pet sedang disiapkan. Hubungi pengelola untuk mengaktifkan fitur ini.</p>:<>
+    <div className="pet-library-summary"><span><strong>{active.length}</strong> Pet aktif</span><span>{individual} individual</span><span>{active.length-individual} kelompok</span><span>{pets.filter(p=>p.status==='archived').length} arsip</span></div>
+    <div className="pet-button-row"><button className="app-button" onClick={onAdd}><Plus size={20}/>Tambah Pet</button><button className="app-button app-button--secondary" onClick={onBulk} disabled={!active.some(p=>p.ownershipConfirmed&&p.species.careActions.length)}><Users size={20}/>Rawat Bersama</button></div>
+    <div className="pet-filters"><div className="schedule-filters" role="group" aria-label="Status Pet">{(['active','archived'] as const).map(s=><button key={s} className={status===s?'is-active':''} aria-pressed={status===s} onClick={()=>setStatus(s)}>{s==='active'?'Aktif':'Arsip'}</button>)}</div><label>Kategori<select value={category} onChange={e=>setCategory(e.target.value as PetType|'')}><option value="">Semua kategori</option>{Object.entries(PET_CATEGORIES).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label><label className="pet-search"><span><Search size={18}/>Cari Pet</span><input type="search" value={search} maxLength={120} placeholder="Nama, jenis, atau lokasi" onChange={e=>setSearch(e.target.value)}/></label></div>
+    <p className="pet-help">{visible.length} Pet ditampilkan. Satu Pet bisa mewakili satu tanaman / hewan atau satu kelompok.</p>
+    <div className="pet-card-grid">{visible.map(p=><button className="pet-card" key={p.id} onClick={()=>onDetail(p)}><PetVisual pet={p} compact/><span className="pet-card__copy"><strong>{p.nickname}</strong><span>{petDescription(p)}</span>{p.locationLabel&&<span className="pet-location"><MapPin size={15}/>{p.locationLabel}</span>}<span className={`pet-state ${!p.ownershipConfirmed?'pet-state--review':''}`}>{p.status==='archived'?'Diarsipkan':!p.ownershipConfirmed?'Perlu konfirmasi':'Aktif'}</span></span></button>)}</div>
+    {!visible.length&&<div className="pet-empty"><h2>{pets.length?'Belum ada Pet sesuai pilihan':'Belum ada Pet di kebun Anda'}</h2><p>{status==='archived'?'Pet yang diarsipkan akan tetap dapat dilihat dan dipulihkan di sini.':'Tambahkan budidaya yang benar-benar Anda miliki atau rawat.'}</p>{status==='active'&&<button className="app-button" onClick={onAdd}>Tambah Pet</button>}</div>}
+    </>}
+  </main>;
+}
+export function PetDetail({pet,mutate,onClose,onEdit,onArchive,onCare,onSchedule,onPhoto,onJournal}:{pet:Cultivation;mutate:PetMutation;onClose:()=>void;onEdit:()=>void;onArchive:()=>void;onCare:()=>void;onSchedule:()=>void;onPhoto:()=>void;onJournal:()=>void}){
+  const [busy,setBusy]=useState(false),[error,setError]=useState('');
+  const names=pet.species.type==='tunas'?['Nutrisi','Air','Perawatan']:['Pakan',pet.species.type==='koki'?'Air':'Kandang','Perawatan'];
+  return <PetDialogFrame title={pet.nickname} busy={busy} onClose={onClose}><div className={`pet-detail-visual gh-habitat--${pet.species.type||'tunas'}`}><PetVisual pet={pet}/></div><p><strong>{petDescription(pet)}</strong></p>
+    <dl className="pet-detail-facts"><div><dt>Lokasi</dt><dd>{pet.locationLabel||'Belum diisi'}</dd></div><div><dt>Status</dt><dd>{pet.status==='archived'?'Arsip':pet.ownershipConfirmed?'Aktif':'Perlu konfirmasi'}</dd></div><div><dt>Mulai dicatat</dt><dd>{new Date(pet.startedAt).toLocaleDateString('id-ID',{timeZone:'Asia/Jakarta'})}</dd></div>{pet.archivedAt&&<div><dt>Alasan arsip</dt><dd>{archiveLabels[pet.archiveReason||'']||'Tidak dicatat'}</dd></div>}</dl>
+    {pet.species.status!=='published'&&<p className="status-note">Jenis ini sudah tidak tersedia untuk Pet baru. Pet Anda dan riwayatnya tetap disimpan.</p>}
+    {!pet.ownershipConfirmed&&<p className="status-note">Tinjau catatan lama ini sebelum menambah perawatan atau jadwal.</p>}
+    <section className="pet-metrics"><h3>Catatan perawatan virtual</h3><p className="pet-help">Indikator aplikasi, bukan diagnosis kondisi nyata {quantityLabel(pet)}.</p>{(['stat1','stat2','stat3'] as const).map((key,i)=><label key={key}>{names[i]}<progress value={pet.metrics[key]} max={100}/><span>{pet.metrics[key]}/100</span></label>)}</section>
+    <div className="pet-button-row"><button className="app-button" disabled={busy} onClick={onEdit}>{pet.ownershipConfirmed?'Ubah Pet':'Tinjau Pet'}</button>{pet.status==='active'?<><button className="app-button app-button--secondary" disabled={!pet.ownershipConfirmed||busy} onClick={onCare}>Rawat</button><button className="app-button app-button--secondary" disabled={!pet.ownershipConfirmed||busy} onClick={onSchedule}>Jadwal Pet ini</button><button className="app-button app-button--secondary" disabled={busy} onClick={onArchive}>Arsipkan Pet</button></>:<button className="app-button app-button--secondary" disabled={busy} onClick={async()=>{setBusy(true);try{await mutate(`/cultivations/${pet.id}/restore`,'POST',{},'Pet dipulihkan. Jadwal tetap nonaktif.');onClose();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}}>{busy?'Menyimpan…':'Pulihkan Pet'}</button>}<button className="app-button app-button--secondary" onClick={onPhoto}>Tanya kondisi ke AI</button><button className="app-button app-button--secondary" onClick={onJournal}>Lihat jurnal</button></div>
+    {pet.status==='archived'&&<p className="pet-help">Pemulihan mempertahankan catatan lama. Jadwal perlu Anda aktifkan kembali secara manual.</p>}
+    <section className="pet-guides"><h3>Panduan {pet.species.name}</h3>{pet.species.guides.length?pet.species.guides.map((g,i)=><details key={`${g.title}-${i}`}><summary>{g.title}</summary><p>{g.bodyText}</p></details>):<p>Belum ada panduan terbit untuk jenis ini.</p>}</section>
+    {error&&<p role="alert">{error}</p>}
+  </PetDialogFrame>;
+}

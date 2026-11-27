@@ -19,6 +19,7 @@ interface ChatAIScreenProps {
   openPhotoOnMount?: boolean;
   onPhotoPromptOpened?: () => void;
   cultivationSpecies?: PetVariety;
+  cultivationContext?: string;
 }
 
 interface ThreadState {
@@ -100,7 +101,7 @@ function compressPhoto(file: File): Promise<string> {
   });
 }
 
-export function ChatAIScreen({ conversationId, conversation, onConversationChange, onOpenHistory, onNewChat, openPhotoOnMount = false, onPhotoPromptOpened,cultivationSpecies }: ChatAIScreenProps) {
+export function ChatAIScreen({ conversationId, conversation, onConversationChange, onOpenHistory, onNewChat, openPhotoOnMount = false, onPhotoPromptOpened,cultivationSpecies,cultivationContext }: ChatAIScreenProps) {
   const [thread, setThread] = useState<ThreadState>(() => ({
     id: conversationId || conversation?.id || createChatId(),
     messages: conversation?.messages?.length ? [...conversation.messages] : [],
@@ -331,7 +332,7 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
       const url = await compressPhoto(file);
       if (!mountedRef.current || version !== photoVersion.current || activeThreadVersion !== requestVersion.current) return;
       setPhotoDraft({ url, name: file.name || 'Foto kebun' });
-      setPhotoSpecies(contextSpecies.current||'');
+      setPhotoSpecies(Object.values(SPECIES).flat().some(s=>s.id===contextSpecies.current&&s.available!==false)?contextSpecies.current!:'');
       setPhotoIntent('condition');
       setPhotoDescription('');
     } catch (error) {
@@ -378,6 +379,7 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
 
       <main className="consultation-main">
         <aside className="consultation-mode-note"><Info size={16} /><p>{capabilities?.externalEnabled?'Asisten AI pertanian · demo':capabilities?.localFallback===false?'Konsultasi sedang tidak tersedia':'Panduan lokal'}{capabilities?.externalEnabled&&!capabilities.connectionVerified?' · koneksi belum diuji':''}</p></aside>
+        {cultivationContext&&<p className="pet-help">Pet yang dibuka: {cultivationContext}. Nama Pet hanya ditampilkan di aplikasi.</p>}
 
         {!hasUserMessages && !photoDraft && !isProcessingPhoto && <div className="consultation-start">
           <div className="consultation-intro"><div><h2>Ada yang bisa dibantu?</h2><p>Tanyakan cara merawat tanaman atau ternak Anda.</p></div><img src="/assets/generated/kangkung.webp" alt="" width="94" height="108" /></div>

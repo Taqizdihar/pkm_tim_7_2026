@@ -52,10 +52,10 @@ for (const width of [320, 390]) test(`all member bottom sheets slide in and drag
   const fixture = await memberFixture(page);
   await page.setViewportSize({ width, height: 844 });
   const cases = [
-    ['beranda', 'Pilih jenis tanaman'], ['beranda', 'Pilih jenis ikan'], ['beranda', 'Pilih jenis ayam'],
-    ['beranda', 'Buka perawatan Sorgum'], ['beranda', 'Panduan budidaya'], ['beranda', 'Cuaca tani'],
+    ['beranda', 'Pilih Pet'], ['pet_saya', 'Tambah Pet'], ['pet_saya', 'Rawat Bersama'],
+    ['beranda', 'Rawat'], ['beranda', 'Panduan budidaya'], ['beranda', 'Cuaca tani'],
     ['jadwal', 'Tambah jadwal'], ['chat_ai', 'Lampirkan foto'],
-    ['pengaturan', 'Bahasa Bahasa Indonesia'], ['pengaturan', 'Cara memakai Dewi Sri Pilihan jenis, perawatan, dan foto'],
+    ['pengaturan', 'Bahasa Bahasa Indonesia'], ['pengaturan', 'Cara memakai Dewi Sri Pet Saya, perawatan, dan foto'],
     ['pengaturan', 'Tentang Dewi Sri Teman merawat kebun dan ternak'], ['pengaturan', 'Keluar ke layar awal'],
   ];
   for (const [screen, name] of cases) {
@@ -71,8 +71,8 @@ for (const width of [320, 390]) test(`all member bottom sheets slide in and drag
     const bounds = (await sheet.boundingBox())!;
     expect(Math.abs(bounds.y + bounds.height - 844), name).toBeLessThan(2);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), name).toBe(true);
-    if (width === 390 && ['Pilih jenis tanaman', 'Buka perawatan Sorgum', 'Lampirkan foto'].includes(name))
-      await page.screenshot({ path: `.artifacts/sheet-${screen}-${name === 'Pilih jenis tanaman' ? 'species' : name === 'Lampirkan foto' ? 'photo' : 'care'}.png` });
+    if (width === 390 && ['Pilih Pet', 'Rawat', 'Lampirkan foto'].includes(name))
+      await page.screenshot({ path: `.artifacts/sheet-${screen}-${name === 'Pilih Pet' ? 'species' : name === 'Lampirkan foto' ? 'photo' : 'care'}.png` });
     await dragHandle(page);
     await expect(sheet).toHaveCount(0);
     await expect(opener).toBeFocused();
@@ -91,7 +91,7 @@ test('a short pull springs back without clicking the handle; keyboard and backdr
   await memberFixture(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/?screen=beranda');
-  const opener = page.getByRole('button', { name: 'Pilih jenis tanaman', exact: true });
+  const opener = page.getByRole('button', { name: 'Pilih Pet', exact: true });
   await opener.click();
   const sheet = page.getByRole('dialog');
   await rest(sheet);
@@ -101,7 +101,7 @@ test('a short pull springs back without clicking the handle; keyboard and backdr
   await dragHandle(page, 5, 80);
   await expect(sheet).toBeVisible();
   await rest(sheet);
-  const search = page.getByRole('searchbox', { name: 'Cari jenis tanaman' });
+  const search = page.getByRole('searchbox', { name: 'Cari Pet' });
   await search.fill('kangkung');
   await expect(search).toHaveValue('kangkung');
   await page.getByRole('button', { name: 'Tutup panel', exact: true }).focus();
@@ -135,7 +135,7 @@ test('real touch can pull the handle and unscrolled content, with cancellation a
   await expect(sheet).toHaveCount(0);
   await opener.click();
   await rest(sheet);
-  const heading = (await sheet.getByRole('heading', { name: 'Rencanakan perawatan' }).boundingBox())!;
+  const heading = (await sheet.getByRole('heading', { name: 'Cuaca tani' }).boundingBox())!;
   expect(await touchDrag(page, heading.x + 10, heading.y + heading.height / 2, 0, 180)).toBeGreaterThan(100);
   await expect(sheet).toHaveCount(0);
 });
@@ -144,7 +144,7 @@ test('long content scrolls normally and the handle can dismiss a scrolled sheet'
   await memberFixture(page);
   await page.setViewportSize({ width: 320, height: 568 });
   await page.goto('/?screen=beranda');
-  await page.getByRole('button', { name: 'Pilih jenis tanaman', exact: true }).click();
+  await page.getByRole('button', { name: 'Panduan budidaya', exact: true }).click();
   const sheet = page.getByRole('dialog');
   await rest(sheet);
   const bounds = (await sheet.boundingBox())!;

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {memberFixture} from './memberFixture';
 
-const screens = ['beranda', 'jadwal', 'jurnal', 'chat_ai', 'chat_history', 'pengaturan', 'rank_petani', 'edit_profile'];
+const screens = ['beranda', 'pet_saya', 'jadwal', 'jurnal', 'chat_ai', 'chat_history', 'pengaturan', 'rank_petani', 'edit_profile'];
 
 for (const width of [320, 768, 1440]) test(`member screens reflow at ${width}px`, async ({ page }) => {
   await memberFixture(page);
@@ -22,7 +22,7 @@ for (const width of [320, 768, 1440]) test(`member screens reflow at ${width}px`
   }
   await page.goto('/?screen=beranda');
   if (width === 320) await expect(page.getByRole('button', { name: /suara/ })).toBeVisible();
-  const picker = page.getByRole('button', { name: 'Pilih jenis tanaman' });
+  const picker = page.getByRole('button', { name: 'Pilih Pet' });
   await picker.click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.keyboard.press('Escape');

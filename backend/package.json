@@ -9,6 +9,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "tsx --test tests/*.test.ts",
+    "schema:multi-pet": "tsx src/check-multi-pet.ts",
     "admin:create": "tsx src/cli.ts create",
     "admin:list": "tsx src/cli.ts list",
     "admin:reset-password": "tsx src/cli.ts reset-password",

@@ -12,6 +12,7 @@ const app = createApp({
   checkDatabase: () => checkDatabase(pool, env.DB_NAME),
   catalog: createCatalogRepository(pool),
   ai: createAI(env),
+  bulkCareMaxPets:env.BULK_CARE_MAX_PETS,
 });
 
 const server = app.listen(env.PORT, env.HOST, () => {

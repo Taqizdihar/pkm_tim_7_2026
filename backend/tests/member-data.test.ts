@@ -10,15 +10,17 @@ import {createApp} from '../src/app.js';
 test('member HTTP data boundary rejects foreign records and forged fields',async()=>{
   const writes:string[]=[];
   const db={query:async(sql:string,params:any[])=>{
+    if(sql.includes('LIMIT 0'))return [[]];
+    if(sql.includes('information_schema.TABLE_CONSTRAINTS'))return [[...['uq_uc_create_request','chk_uc_mode_quantity','uq_care_logs_client_event'].map(CONSTRAINT_NAME=>({CONSTRAINT_NAME}))]];
     assert.ok(params.includes('A'),'ownership query must include authenticated member A');
-    if(sql.includes('FROM user_cultivations')||sql.includes('FROM chat_conversations')||sql.includes('FROM care_schedules')||sql.includes('FROM media_assets'))return [[]];
+    if(sql.includes('FROM user_cultivations')||sql.includes('FROM chat_conversations')||sql.includes('FROM care_schedules')||sql.includes('FROM care_logs')||sql.includes('FROM media_assets'))return [[]];
     throw Error(`Unexpected query ${sql}`);
   },execute:async(sql:string)=>{writes.push(sql);return [{}];}} as any;
   const auth={mutate:async(user:string,_token:string,fn:any)=>{assert.equal(user,'A');return fn(db);}} as any;
   const app=express();app.use(express.json());app.use((_req,res,next)=>{res.locals.member={id:'A'};res.locals.memberToken='fixture';next();});app.use(memberRouter(db as Pool,auth,'unused-fixture-path'));
   app.use((e:any,_req:any,res:any,_next:any)=>res.status(e.status||422).json({message:e.message}));
   const uuid='123e4567-e89b-42d3-a456-426614174000';
-  assert.equal((await request(app).patch('/cultivations/2').send({nickname:'foreign'})).status,404);
+  assert.equal((await request(app).patch('/cultivations/2').send({nickname:'foreign',pet_mode:'individual',quantity:1})).status,404);
   assert.equal((await request(app).post('/cultivations/2/care-actions').send({slot:'action1',client_event_id:uuid})).status,404);
   assert.equal((await request(app).post('/schedules/2/complete').send({client_event_id:uuid})).status,404);
   assert.equal((await request(app).get('/chat/conversations/2')).status,404);
@@ -32,18 +34,10 @@ test('member HTTP data boundary rejects foreign records and forged fields',async
 });
 
 test('scheduled occurrence is applied once even with different retry event IDs',async()=>{
-  const events:any[]=[];let writes=0;
-  const db={query:async(sql:string,p:any[])=>{
-    if(sql.includes('SELECT * FROM user_cultivations'))return [[{id:'1',species_id:'3',metrics_json:{stat1:30,stat2:10,stat3:25}}]];
-    if(sql.includes('sca.effect_config_json'))return [[{id:'5',effect_config_json:{stat2:30,stat3:15}}]];
-    if(sql.includes('FROM care_schedules'))return [[{id:'7'}]];
-    if(sql.includes('FROM care_logs'))return [events.filter(e=>e.schedule===p[3])];
-    if(sql.includes('SELECT category_id FROM species'))return [[{category_id:'3'}]];
-    if(sql.includes('FROM cultivation_categories'))return [[{id:'3',parent_id:null,habitat_key:'kebun'}]];
-    throw Error(sql);
-  },execute:async(sql:string,p:any[])=>{writes++;if(sql.startsWith('INSERT INTO care_logs'))events.push({schedule:p[2]});return [{}];}} as any;
-  await performCare(db,'A','1','action1','event-1','7');await performCare(db,'A','1','action1','event-2','7');
-  assert.equal(events.length,1);assert.equal(writes,2);
+  const {petFixture}=await import('./pet-fixture.js');const {createPet,createPetInput}=await import('../src/modules/member/pets.js');const {saveSchedule}=await import('../src/modules/member/scheduling.js');
+  const f=petFixture(),key=await createPet(f.db,'1',createPetInput.parse({nickname:'Sawi depan',species_slug:'sawi',pet_mode:'individual',quantity:1,ownership_confirmed:true,client_request_id:'123e4567-e89b-42d3-a456-426614174000'}));
+  await saveSchedule(f.db,'1',{cultivation_id:key,slot:'action1',time:'07:00',enabled:true});
+  await performCare(f.db,'1',key,'action1','event-1','1');await performCare(f.db,'1',key,'action1','event-2','1');assert.equal(f.state.logs.length,1);
 });
 
 test('missing member schema is sanitized and does not break public catalog or admin login page APIs',async()=>{

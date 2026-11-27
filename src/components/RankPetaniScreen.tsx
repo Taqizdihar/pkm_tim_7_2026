@@ -51,7 +51,7 @@ export function RankPetaniScreen({ farmerRank, onBack, onClaimDailyReward, daily
           return <li key={step.level} className={`${current ? 'is-current' : ''} ${attained ? 'is-attained' : ''}`} aria-current={current ? 'step' : undefined}><span className="rank-path-number" aria-hidden="true">{attained && !current ? <Check size={20} /> : step.level}</span><span className="rank-path-copy"><small>Level {step.level}{current && <em>Sekarang</em>}</small><strong>{step.title}</strong><span>{step.minimum === 0 ? 'Mulai perjalanan merawat' : `${step.minimum} catatan perawatan`}</span></span>{current ? <Sprout size={23} aria-hidden="true" /> : !attained ? <span className="rank-unreached">{Math.max(0, step.minimum - totalCare)} lagi</span> : <span className="rank-attained">Tercapai</span>}</li>;
         })}</ol></section>
 
-        <section className="rank-how"><img src="/assets/generated/care-tools-v1.webp" alt="" /><div><h2>Rawat sesuai kebutuhan</h2><p>Catat kegiatan yang benar-benar dilakukan melalui tombol Rawat. Jenjang bertambah mengikuti catatan perawatan Anda.</p></div></section>
+        <section className="rank-how"><img src="/assets/generated/care-tools-v1.webp" alt="" /><div><h2>Rawat sesuai kebutuhan</h2><p>Catat kegiatan yang benar-benar dilakukan melalui tombol Rawat. Rawat Bersama dihitung satu kegiatan, berapa pun jumlah Pet yang dirawat. Membuat Pet atau menambah jumlah tidak memberi poin.</p></div></section>
         <button type="button" className="app-button app-button--plain app-button--wide" onClick={onBack}>Kembali ke pengaturan<ChevronRight size={18} /></button>
       </main>
     </div>

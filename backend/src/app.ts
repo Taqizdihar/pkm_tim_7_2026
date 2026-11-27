@@ -15,6 +15,7 @@ import { memberAuthRouter } from './modules/member-auth/routes.js';
 import { membersRouter } from './modules/admin/members.js';
 import { memberRouter } from './modules/member/routes.js';
 import { createAI, type AIService } from './integrations/ai/router.js';
+import {multiPetReady} from './modules/member/shared.js';
 
 export interface AppDependencies {
   frontendOrigin: string;
@@ -22,6 +23,7 @@ export interface AppDependencies {
   checkDatabase: () => Promise<void>;
   catalog: CatalogRepository;
   ai?: AIService;
+  bulkCareMaxPets?: number;
 }
 
 const slugSchema = z.object({ slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(120) });
@@ -40,7 +42,8 @@ export function createApp(deps: AppDependencies) {
     app.use('/api/v1/admin/members', membersRouter(deps.pool));
     const memberAuth = createMemberAuth(deps.pool,deps.memberSessionHours ?? 24);
     app.use('/api/v1',memberAuthRouter(memberAuth,deps.frontendOrigin,deps.secureCookies ?? false));
-    app.use('/api/v1/member',memberRouter(deps.pool,memberAuth,deps.uploadRoot ?? 'storage/uploads',ai));
+    app.use('/api/v1/member',memberRouter(deps.pool,memberAuth,deps.uploadRoot ?? 'storage/uploads',ai,deps.bulkCareMaxPets??50));
+    app.get('/api/v1/health/multi-pet-schema',async(_req,res)=>res.json({success:true,data:{ready:await multiPetReady(deps.pool!)}}));
     app.get('/api/v1/health/member-schema', async (_req,res) => {
       await deps.pool!.query('SELECT username,phone_number,must_change_password,temporary_password_expires_at,password_changed_at,created_by FROM users LIMIT 0');
       await deps.pool!.query('SELECT token_hash,user_id,created_at,expires_at,revoked_at FROM member_sessions LIMIT 0');
@@ -105,7 +108,7 @@ export function createApp(deps: AppDependencies) {
     if (error instanceof ZodError && error.issues[0]?.code==='custom') message=error.issues[0].message;
     if (err.code === 'ER_DUP_ENTRY') { status=409; code='IDENTIFIER_CONFLICT'; message='Nomor HP, username, email, slug, atau kode sudah digunakan.'; }
     if (err.code === 'ER_NO_REFERENCED_ROW_2' || err.code === 'ER_ROW_IS_REFERENCED_2') { status=409; message='Data masih memiliki hubungan atau referensi tidak ditemukan.'; }
-    if (err.code === 'ER_NO_SUCH_TABLE' || err.code === 'ER_BAD_FIELD_ERROR') { status=503; code='SCHEMA_NOT_READY'; message='Skema belum lengkap. Periksa panduan SQL 04_member_auth dan 05_ai_consultation melalui phpMyAdmin.'; }
+    if (err.code === 'ER_NO_SUCH_TABLE' || err.code === 'ER_BAD_FIELD_ERROR') { status=503; code='SCHEMA_NOT_READY'; message='Fitur belum siap. Hubungi pengelola untuk melengkapi skema database.'; }
     if (['ECONNREFUSED','ETIMEDOUT','PROTOCOL_CONNECTION_LOST','ER_ACCESS_DENIED_ERROR','ER_BAD_DB_ERROR'].includes(err.code || '')) { status=503; code='DATABASE_UNAVAILABLE'; message='Database belum tersedia. Hubungi pengelola atau coba lagi nanti.'; }
     if (err.code === 'LIMIT_FILE_SIZE') { status=413; message='Ukuran gambar maksimal 5 MB.'; }
     if (error instanceof SyntaxError) { status=400; message='JSON tidak valid.'; }

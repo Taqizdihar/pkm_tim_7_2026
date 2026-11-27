@@ -4,12 +4,14 @@ import {api} from './api.ts';
 import {Dialog} from '../components/ui/Dialog.tsx';
 import './members.css';
 
-interface Member {id:string;name:string;phone_number:string|null;username:string|null;email:string|null;status:'active'|'disabled';must_change_password:number;last_login_at:string|null;created_at:string}
+interface PetSummary {ready:boolean;active:number;individual:number;group:number;archived:number;unconfirmed:number}
+interface Member {id:string;name:string;phone_number:string|null;username:string|null;email:string|null;status:'active'|'disabled';must_change_password:number;last_login_at:string|null;created_at:string;petSummary?:PetSummary}
 type Mode={kind:'create'|'edit'|'reset'|'status';member?:Member}|null;
 const date=(value:string|null)=>value?new Date(value).toLocaleString('id-ID',{timeZone:'Asia/Jakarta'}):'Belum pernah masuk';
 export function Members() {
   const [items,setItems]=useState<Member[]>([]),[total,setTotal]=useState(0),[page,setPage]=useState(1),[search,setSearch]=useState(''),[status,setStatus]=useState('');
   const [loading,setLoading]=useState(true),[error,setError]=useState(''),[message,setMessage]=useState(''),[mode,setMode]=useState<Mode>(null),[revision,setRevision]=useState(0);
+  const [petMember,setPetMember]=useState<Member|null>(null);
   useEffect(()=>{let active=true;setLoading(true);setError('');api(`/members?${new URLSearchParams({search,status,page:String(page)})}`).then(d=>{if(active){setItems(d.items);setTotal(d.total);}}).catch(e=>{if(active)setError(e.message);}).finally(()=>{if(active)setLoading(false);});return()=>{active=false;};},[page,search,status,revision]);
   const open=(mode:Mode)=>{setMessage('');setMode(mode);};
   return <><div className="admin-page-heading"><div><p className="admin-kicker">Keanggotaan Dewi Sri</p><h1>Kelola Anggota KWT</h1><p>Buat akun dan bantu anggota mengelola aksesnya.</p></div><button className="primary" onClick={()=>open({kind:'create'})}><Plus size={18}/>Tambah Anggota KWT</button></div>
@@ -18,10 +20,17 @@ export function Members() {
     {loading?<p className="admin-state" role="status">Memuat anggota…</p>:error?<button onClick={()=>setRevision(r=>r+1)}>Coba lagi</button>:<><p className="admin-muted">{total} anggota sesuai pencarian</p><div className="member-list">{items.map(m=><article key={m.id}>
       <div className="member-identity"><span className="admin-list-mark"><Users size={21} aria-hidden="true"/></span><div><h2>{m.name}</h2><span className={`admin-badge admin-badge--${m.status==='active'?'published':'archived'}`}>{m.status==='active'?'Aktif':'Nonaktif'}</span>{!!m.must_change_password&&<p>Wajib ganti kata sandi</p>}</div></div>
       <dl><div><dt>Nomor HP</dt><dd>{m.phone_number||'Belum diisi'}</dd></div><div><dt>Username</dt><dd>{m.username||'Belum diisi'}</dd></div><div><dt>Email</dt><dd>{m.email||'Belum diisi'}</dd></div><div><dt>Terakhir masuk</dt><dd>{date(m.last_login_at)}</dd></div><div><dt>Dibuat</dt><dd>{date(m.created_at)}</dd></div></dl>
-      <div className="member-actions"><button onClick={()=>open({kind:'edit',member:m})}>Ubah anggota</button><button onClick={()=>open({kind:'reset',member:m})}>Atur Ulang Kata Sandi</button><button onClick={()=>open({kind:'status',member:m})}>{m.status==='active'?'Nonaktifkan':'Aktifkan'} anggota</button></div>
+      {m.petSummary?.ready&&<p className="admin-muted">{m.petSummary.active} Pet aktif · {m.petSummary.individual} individual · {m.petSummary.group} kelompok · {m.petSummary.archived} arsip · {m.petSummary.unconfirmed} perlu konfirmasi</p>}
+      <div className="member-actions"><button onClick={()=>setPetMember(m)}>Lihat Pet Anggota</button><button onClick={()=>open({kind:'edit',member:m})}>Ubah anggota</button><button onClick={()=>open({kind:'reset',member:m})}>Atur Ulang Kata Sandi</button><button onClick={()=>open({kind:'status',member:m})}>{m.status==='active'?'Nonaktifkan':'Aktifkan'} anggota</button></div>
     </article>)}</div>{!items.length&&<p className="admin-empty">Belum ada anggota yang sesuai pencarian.</p>}<div className="member-pagination"><button disabled={page===1} onClick={()=>setPage(p=>p-1)}>Sebelumnya</button><span>Halaman {page} dari {Math.max(1,Math.ceil(total/20))}</span><button disabled={page*20>=total} onClick={()=>setPage(p=>p+1)}>Berikutnya</button></div></>}
     {mode&&<MemberEditor key={`${mode.kind}-${mode.member?.id||'new'}`} mode={mode} onClose={()=>setMode(null)} onSaved={()=>{setMode(null);setRevision(r=>r+1);setMessage('Perubahan anggota tersimpan.');}}/>}
+    {petMember&&<MemberPetViewer member={petMember} onClose={()=>setPetMember(null)}/>}
   </>;
+}
+function MemberPetViewer({member,onClose}:{member:Member;onClose:()=>void}){
+  const [page,setPage]=useState(1),[data,setData]=useState<{summary:PetSummary;items:{id:string;nickname:string;speciesName:string;categoryName:string;petMode:string;quantity:number;locationLabel:string;status:string;ownershipConfirmed:boolean}[];total:number}|null>(null),[error,setError]=useState('');
+  useEffect(()=>{let active=true;setData(null);setError('');api(`/members/${member.id}/cultivations?page=${page}`).then(v=>{if(active)setData(v);}).catch(e=>{if(active)setError(e.message);});return()=>{active=false;};},[member.id,page]);
+  return <Dialog labelledBy="member-pets-title" onClose={onClose} className="member-admin-dialog"><div className="member-dialog-heading"><h2 id="member-pets-title">Pet · {member.name}</h2><button className="icon-button" onClick={onClose} aria-label="Tutup Pet anggota"><X size={20}/></button></div><p>Ringkasan budidaya anggota. Data ini hanya dapat dilihat.</p>{error?<p className="admin-error" role="alert">{error}</p>:!data?<p role="status">Memuat Pet…</p>:!data.summary.ready?<p>Multi-Pet belum siap. Terapkan migrasi manual 06_multi_pet_management.sql.</p>:<><p>{data.summary.active} aktif · {data.summary.individual} individual · {data.summary.group} kelompok · {data.summary.archived} arsip · {data.summary.unconfirmed} perlu konfirmasi</p><div className="member-pet-list">{data.items.map(p=><article key={p.id}><h3>{p.nickname}</h3><p>{p.speciesName} · {p.categoryName} · {p.petMode==='group'?'Kelompok':'Individual'} · Jumlah {p.quantity.toLocaleString('id-ID')}</p><p>{p.locationLabel||'Lokasi belum diisi'} · {p.status==='archived'?'Arsip':p.ownershipConfirmed?'Aktif':'Perlu konfirmasi'}</p></article>)}</div>{!data.total&&<p>Anggota belum memiliki Pet.</p>}<div className="member-pagination"><button disabled={page===1} onClick={()=>setPage(p=>p-1)}>Sebelumnya</button><span>Halaman {page} · {data.total} Pet</span><button disabled={page*20>=data.total} onClick={()=>setPage(p=>p+1)}>Berikutnya</button></div></>}</Dialog>;
 }
 function MemberEditor({mode,onClose,onSaved}:{mode:NonNullable<Mode>;onClose:()=>void;onSaved:()=>void}) {
   const [error,setError]=useState(''),[busy,setBusy]=useState(false),[show,setShow]=useState(false);

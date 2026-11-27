@@ -6,6 +6,7 @@ import { ordinaryMember, safeColumns, lockMember } from '../member-auth/service.
 import { hashPassword } from '../auth/service.js';
 import { transaction } from './provision.js';
 import { HttpError } from '../../utils/http.js';
+import {memberPets,petSummary} from './member-pets.js';
 
 export function membersRouter(pool: Pool) {
   const router=Router();
@@ -19,8 +20,10 @@ export function membersRouter(pool: Pool) {
     const params=[q.status,q.status,`%${q.search}%`];
     const [rows]=await pool.query<RowDataPacket[]>(`SELECT ${safeColumns} FROM users u WHERE ${where} ORDER BY u.id DESC LIMIT 20 OFFSET ?`,[...params,(q.page-1)*20]);
     const [count]=await pool.execute<RowDataPacket[]>(`SELECT COUNT(*) AS total FROM users u WHERE ${where}`,params);
-    res.json({success:true,data:{items:rows,total:Number(count[0].total),page:q.page}});
+    const items=await Promise.all(rows.map(async r=>({...r,petSummary:await petSummary(pool,String(r.id))})));
+    res.json({success:true,data:{items,total:Number(count[0].total),page:q.page}});
   });
+  router.get('/:id/cultivations',async(req,res)=>{const key=id.parse(req.params.id);await detail(key);const q=z.object({page:z.coerce.number().int().min(1).max(100000).default(1)}).strict().parse(req.query);res.json({success:true,data:await memberPets(pool,key,q.page)});});
   router.get('/:id',async(req,res)=>res.json({success:true,data:await detail(id.parse(req.params.id))}));
   router.post('/',async(req,res)=>{
     const b=createInput.parse(req.body),hash=await hashPassword(b.password);

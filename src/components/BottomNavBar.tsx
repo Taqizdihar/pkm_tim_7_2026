@@ -4,7 +4,7 @@ import { Brand } from './ui/Brand.tsx';
 import { useLayoutEffect, useRef } from 'react';
 
 const items = [
-  { screen: 'beranda' as const, label: 'Beranda', icon: House, screens: ['beranda', 'jurnal'] },
+  { screen: 'beranda' as const, label: 'Beranda', icon: House, screens: ['beranda', 'pet_saya', 'jurnal'] },
   { screen: 'jadwal' as const, label: 'Jadwal', icon: CalendarDays, screens: ['jadwal'] },
   { screen: 'chat_ai' as const, label: 'Tanya Tani', icon: MessageCircle, screens: ['chat_ai', 'chat_history'] },
   { screen: 'pengaturan' as const, label: 'Profil', icon: UserRound, screens: ['pengaturan', 'edit_profile', 'rank_petani'] },

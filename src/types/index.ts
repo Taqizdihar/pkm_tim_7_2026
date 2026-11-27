@@ -84,6 +84,7 @@ export type ActiveScreen =
   | 'register'
   | 'forgot_password'
   | 'beranda'
+  | 'pet_saya'
   | 'jadwal'
   | 'jurnal'
   | 'chat_ai'
