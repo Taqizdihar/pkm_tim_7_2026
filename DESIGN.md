@@ -28,6 +28,8 @@ Gunakan sans-serif bulat yang sudah tersedia di proyek, dengan bobot tegas untuk
 - Mulai 1024 px, navigasi utama berpindah menjadi sidebar tetap. Beranda menempatkan spesies sebagai fokus di kolom utama, dengan jadwal dan progres di kolom pendamping. Composer Tanya Tani mengikuti pusat area isi, bukan pusat seluruh viewport.
 - CMS internal memakai sidebar pada layar lebar dan menu yang dapat dibuka serta ditutup dengan keyboard pada layar hingga 860 px. Warna merek tetap sama, tetapi bidang kerja lebih tenang dan padat informasi daripada aplikasi anggota.
 
+Ruang untuk navigasi bawah dan composer Tanya Tani mengikuti tinggi elemen yang sebenarnya, termasuk perubahan ukuran tulisan. Pada ponsel, composer menyambung langsung ke navigasi agar isi tidak terlihat melalui celah di antaranya. Kolom teks tumbuh mengikuti pertanyaan sampai batas tinggi layar, lalu dapat digulir di dalamnya. Ikon daftar CMS tetap berukuran tetap dan berada di tengah; nama, tanggal, serta status diberi ruang terpisah.
+
 Rincian implementasi dan hasil pemeriksaan ada di [`docs/responsive-ui-verification.md`](docs/responsive-ui-verification.md).
 
 ## Rasa gerak

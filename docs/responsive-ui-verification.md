@@ -1,4 +1,45 @@
-# Verifikasi antarmuka responsif — 25 November 2026
+# Verifikasi antarmuka responsif — 27 November 2026
+
+## Perbaikan layout Chrome — 27 November 2026
+
+Pemeriksaan ulang mengikuti laporan overlap pada header/composer Tanya Tani serta ikon daftar dashboard CMS. Reproduksi awal pada Chrome menemukan textarea kosong memiliki tinggi 54 px tetapi scroll height 68 px, sehingga contoh pertanyaan terpotong. Ikon CMS berada di atas kontainernya karena aturan umum `article span` menimpa `display: grid`. Pada Beranda tablet/desktop, kartu jadwal dan perjalanan tani juga memakai baris grid yang bertumpuk.
+
+Perubahan:
+
+- Header Tanya Tani memakai kolom fleksibel untuk identitas dan kolom terpisah untuk Riwayat/Baru. Ikon tetap utuh, teks tidak bertabrakan, dan header layar pendek dipadatkan tanpa menghilangkan label tindakan.
+- Composer ponsel menyambung ke navigasi bawah. Textarea tidak lagi memiliki pegangan resize manual, memakai tulisan minimal 16 px dan tumbuh mengikuti isi sampai batas tinggi viewport. Pertanyaan panjang dapat digulir di dalam input. Tinggi composer, navigasi, dan sinyal visual viewport menentukan ruang isi secara dinamis; inset area aman tetap dihitung terpisah.
+- ResizeObserver dan listener perubahan font menjaga draft tetap terbaca saat lebar atau ukuran tulisan berubah. Perubahan tinggi navigasi tidak menyebabkan siklus pengukuran karena tinggi minimum bilah tidak bergantung pada hasil ukurannya.
+- Ikon daftar CMS memakai bidang tetap 40×40 px dengan SVG di tengah. Nama/tanggal mempunyai kolom sendiri; status berada di bawah nama pada ponsel. Judul panel dan tautan dapat berpindah baris ketika ruang sempit.
+- Kartu perjalanan tani Beranda dipindahkan ke baris grid tersendiri sehingga tidak menumpuk jadwal pada tablet/desktop.
+
+Matriks tambahan: 360×800, 393×852, 412×915, 430×932, 667×375, 768×1024, 1024×768, 1440×900, dan 1920×1080. Ukuran ini mewakili area CSS ponsel yang disebutkan pengguna dan mode Responsive; pengujian tidak mengklaim memakai perangkat fisik Samsung/iPhone/Pixel. Matriks lama 320 px tetap menjadi bagian regresi.
+
+Pengujian baru memeriksa delapan layar anggota, composer dengan pertanyaan pendek/panjang, tulisan besar 18 px, pemisahan kartu Beranda, dashboard/daftar anggota/Pet CMS, serta ikon yang tetap berada di tengah dengan nama panjang. Sinyal keyboard diuji melalui override visual viewport dan tinggi navigasi diuji dengan pembesaran teks; keyboard fisik iOS/Android tidak diuji. Seluruh API pribadi dan CMS memakai fixture HTTP, tanpa menulis data ke MySQL.
+
+Hasil: `npm run lint`, 20 tes unit frontend, dan `npm run build` lulus. Seluruh 48 skenario browser Chrome lulus, kemudian satu skenario tambahan resize berkelanjutan lulus secara terpisah (49 skenario unik). Skenario terakhir menjaga draft yang sama pada lebar 320, 360, 393, 412, 430, 600, 601, 767, 768, 820, 860, 861, 1023, 1024, 1280, dan 1440 px, lalu mengubah ukuran tulisan pada 360 px tanpa resize tambahan. Tidak ada draft hilang, input pendek terpotong, overflow horizontal, atau error JavaScript pada pemeriksaan tersebut.
+
+Screenshot disimpan di `.artifacts/responsive-2026-11-27/`, meliputi chat dan CMS pada 360/393/412/768/1440 px serta Beranda 768/1440 px. Artefak tidak disertakan dalam Git. Palet, ilustrasi, serta alur aplikasi dipertahankan; tidak ada aset atau dependensi baru. Warna placeholder kini memakai teks pendamping Tanya Tani agar tetap terbaca.
+
+Pemeriksaan kualitas untuk area yang diubah, mengikuti panduan aplikasi dalam `AGENTS.md`:
+
+- R-03 / C-4 PASS: matriks Chrome, resize berkelanjutan, input panjang, tulisan besar, dan lanskap memeriksa reflow serta pemisahan kontrol; screenshot chat 360/1440, CMS 393, dan Beranda 768 ditinjau visual.
+- R-25 PASS: placeholder `#506458` di atas `#fafcf6` memiliki rasio kontras 6,15:1, dihitung dengan luminansi relatif WCAG.
+- R-24 / R-26 / R-32 / R-39 PASS: kontrol tetap memakai elemen native dan label yang sudah ada; regresi Chrome mencakup navigasi, pengiriman pertanyaan, formulir CMS, menu keyboard, Escape, fokus dialog, serta reduced motion.
+- R-27 / R-35 PASS: fixture katalog 503 menampilkan fallback yang jujur, keadaan input kosong/panjang diperiksa, dan pemeriksaan build serta browser lulus.
+- R-17 / R-18 / R-23 / R-33 / R-36 / R-38 PASS: diff tidak menambah aset, klaim produk, statistik, atau testimoni; fixture hanya berada di pengujian; perubahan sumber ditulis langsung dengan patch.
+- Purpose-Gate / C-1 / C-3 PASS: grid memisahkan identitas, tindakan, ikon, dan isi agar tidak bertabrakan; bayangan tipis composer menandai batas isi yang dapat digulir. Tidak ada bagian pemasaran atau efek dekoratif baru.
+- Liveliness / R-37 PASS: ENERGY 2 / RHYTHM 2 / MOTION 1 serta motif daun, ilustrasi spesies, dan palet gading/hijau mengikuti `DESIGN.md`; spesies tetap menjadi fokus Beranda.
+- Quality Locks / C-2 / C-5 PASS: hierarki judul, radius, ikon, dan bahasa tindakan mengikuti komponen aplikasi yang ada; tidak ada dependensi baru atau klaim performa/perangkat fisik yang tidak diukur.
+
+Untuk menjalankan pemeriksaan yang sama melalui Google Chrome pada Windows PowerShell dari root:
+
+```powershell
+$env:PLAYWRIGHT_CHANNEL = 'chrome'
+npm run lint
+npm test
+npm run build
+npm run test:browser
+```
 
 ## Panel bawah — 26 November 2026
 

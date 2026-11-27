@@ -16,7 +16,7 @@
   .gh-main-actions { grid-column: 1; grid-row: 4; margin-top: 0; }
   .gh-today { grid-column: 2; grid-row: 3 / 5; align-self: start; padding: 20px; border: 1px solid #dce6d5; border-radius: 22px; background: #fffdf9; }
   .gh-more { grid-column: 1; grid-row: 5; }
-  .gh-journey { grid-column: 2; grid-row: 4; }
+  .gh-journey { grid-column: 2; grid-row: 5; align-self: start; }
   .gh-habitat { height: 310px; }
   .gh-habitat--tunas .gh-subject { width: min(280px, 52%); height: 265px; }
   .gh-habitat--koki .gh-subject { width: min(330px, 62%); height: 210px; }
@@ -86,7 +86,7 @@
   .sc-settings .sc-logout-button { width: auto; justify-self: start; }
   .sc-history .sc-main { max-width: 1000px; }
   .consultation-header { padding-inline: clamp(28px, 4vw, 54px); }
-  .consultation-main { padding-bottom: 178px; }
+  .consultation-main { padding-bottom: calc(var(--consultation-composer-height, 120px) + var(--consultation-keyboard-offset, 0px) + 46px); }
   .consultation-composer { left: calc(50% + var(--app-rail-width) / 2); bottom: 18px; width: min(720px, calc(100vw - var(--app-rail-width) - 64px)); }
   .app-toast, .sc-toast { left: calc(50% + var(--app-rail-width) / 2); bottom: 22px; }
   .rank-main, .sc-main { padding-bottom: 64px; }
@@ -115,7 +115,13 @@
 }
 
 @media (max-width: 767px) {
-  .consultation-composer { max-width: none; }
+  .consultation-screen .consultation-composer {
+    width: 100%; max-width: none;
+    bottom: calc(var(--app-nav-height, 80px) + env(safe-area-inset-bottom, 0px));
+    padding-inline: 16px;
+    border-inline: 0; border-radius: 0;
+    box-shadow: 0 -4px 16px #31482c12;
+  }
   .garden-dialog { max-height: calc(100dvh - 12px); }
 }
 
@@ -126,7 +132,10 @@
 }
 
 @media (max-height: 650px) and (max-width: 767px) {
+  .consultation-header { min-height: 64px; padding-block: 6px; }
+  .consultation-heading p { display: none; }
+  .consultation-header-actions button { flex-direction: row; gap: 6px; min-height: 44px; }
   .consultation-composer { padding-block: 7px; }
-  .consultation-composer-row textarea { min-height: 44px; }
+  .consultation-composer-row textarea { min-height: 44px; max-height: 22dvh; }
   .garden-dialog { max-height: calc(100dvh - 4px); }
 }

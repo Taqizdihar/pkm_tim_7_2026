@@ -26,7 +26,7 @@
 .admin-shortcuts{display:flex;gap:10px;flex-wrap:wrap}.admin-shortcuts a{text-decoration:none;font-size:14px}
 .admin-list{display:grid;gap:10px;margin:20px 0}
 .admin-list article{display:flex;align-items:center;justify-content:space-between;gap:14px;background:#fff;padding:16px;border:1px solid #d9e3d9;border-radius:12px}
-.admin-list article span{display:block;color:#58675c;font-size:13px;overflow-wrap:anywhere}
+.admin-list-copy > span{display:block;color:#58675c;font-size:13px;overflow-wrap:anywhere}
 .admin-shell label{display:flex;flex-direction:column;gap:7px;font-size:14px;font-weight:600}
 .admin-shell label small{font-weight:400;color:#58675c}
 .admin-shell input,.admin-shell select,.admin-shell textarea{width:100%;padding:11px 12px;min-height:46px;border:1px solid #9eafa2;border-radius:8px;background:#fff;color:#2b1704}

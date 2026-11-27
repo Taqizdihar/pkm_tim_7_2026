@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react';
 import { Camera, Check, ChevronRight, Copy, History, ImagePlus, Info, Leaf, LoaderCircle, MessageCircle, Plus, Send, Trash2, X } from 'lucide-react';
 import type { ChatConversation, ChatMessage, PetVariety } from '../types/index.ts';
@@ -115,6 +115,8 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
   const [requestError, setRequestError] = useState('');
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const screenRef = useRef<HTMLElement>(null);
+  const composerRef = useRef<HTMLFormElement>(null);
   const speciesRef = useRef<HTMLSelectElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const cameraPickerRef = useRef<HTMLInputElement>(null);
@@ -129,6 +131,51 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasUserMessages = thread.messages.some((message) => message.sender === 'user');
   const selectedIsPlant = Boolean(photoSpecies && getSpeciesType(photoSpecies) === 'tunas');
+
+  useLayoutEffect(() => {
+    screenRef.current?.style.setProperty('--consultation-keyboard-offset', `${keyboardOffset}px`);
+  }, [keyboardOffset]);
+
+  useLayoutEffect(() => {
+    const composer = composerRef.current, screen = screenRef.current!;
+    if (!composer) { screen.style.setProperty('--consultation-composer-height', '0px'); return; }
+    const update = () => screen.style.setProperty('--consultation-composer-height', `${Math.ceil(composer.getBoundingClientRect().height)}px`);
+    const observer = new ResizeObserver(update);
+    observer.observe(composer);
+    update();
+    return () => observer.disconnect();
+  }, [Boolean(photoDraft)]);
+
+  useLayoutEffect(() => {
+    const field = inputRef.current;
+    if (!field) return;
+    const update = () => {
+      field.style.height = 'auto';
+      const style = getComputedStyle(field);
+      field.style.height = `${field.scrollHeight + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth)}px`;
+    };
+    update();
+    // Viewport and font changes can wrap an unchanged draft onto additional lines.
+    let previousWidth = field.getBoundingClientRect().width;
+    const observer = new ResizeObserver(entries => {
+      const width = entries[0].contentRect.width;
+      if (width !== previousWidth) { previousWidth = width; update(); }
+    });
+    observer.observe(field);
+    let previousFontSize = getComputedStyle(field).fontSize;
+    const fontObserver = new MutationObserver(() => {
+      const fontSize = getComputedStyle(field).fontSize;
+      if (fontSize !== previousFontSize) { previousFontSize = fontSize; update(); }
+    });
+    fontObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] });
+    document.fonts.addEventListener('loadingdone', update);
+    window.addEventListener('resize', update);
+    return () => {
+      observer.disconnect(); fontObserver.disconnect();
+      document.fonts.removeEventListener('loadingdone', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [input, Boolean(photoDraft)]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -168,7 +215,7 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
     if (!thread.messages.length && !photoDraft && !isProcessingPhoto) return;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     messagesEndRef.current?.scrollIntoView({ behavior: reducedMotion ? 'instant' : 'smooth', block: 'end' });
-  }, [thread.messages.length, photoDraft, isProcessingPhoto]);
+  }, [thread.messages.length, photoDraft, isProcessingPhoto, keyboardOffset]);
 
   useEffect(() => {
     if (photoDraft) speciesRef.current?.focus({ preventScroll: true });
@@ -301,7 +348,7 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
   }
 
   return (
-    <section className="consultation-screen" aria-label="Tanya Tani">
+    <section ref={screenRef} className="consultation-screen" aria-label="Tanya Tani">
       <header className="consultation-header">
         <div className="consultation-heading"><span className="consultation-mark"><Leaf size={24} /></span><div><h1>Tanya Tani</h1><p>Panduan tanaman & ternak</p></div></div>
         <div className="consultation-header-actions">
@@ -361,11 +408,11 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
         <div ref={messagesEndRef} className="consultation-scroll-end" />
       </main>
 
-      {!photoDraft && <form className="consultation-composer" onSubmit={submitQuestion} style={keyboardOffset ? { bottom: `${keyboardOffset + 12}px` } : undefined}>
+      {!photoDraft && <form ref={composerRef} className="consultation-composer" onSubmit={submitQuestion} style={keyboardOffset ? { bottom: `${keyboardOffset + 12}px` } : undefined}>
         <label htmlFor="consultation-question">Tulis pertanyaan</label>
         <div className="consultation-composer-row">
           <button type="button" className="consultation-composer-photo" disabled={isProcessingPhoto} onClick={() => setShowAttachDialog(true)} aria-label="Lampirkan foto"><Camera size={22} /><span>Foto</span></button>
-          <textarea id="consultation-question" ref={inputRef} value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={handleInputKey} maxLength={2000} rows={1} placeholder="Contoh: daun kangkung kuning" />
+          <textarea id="consultation-question" ref={inputRef} value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={handleInputKey} maxLength={2000} rows={1} placeholder="Contoh: daun kuning" />
           <button type="submit" className="consultation-send" disabled={!input.trim() || isSending} aria-label="Kirim pertanyaan"><Send size={20} /><span>Kirim</span></button>
         </div>
       </form>}
