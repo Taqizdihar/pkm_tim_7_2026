@@ -65,6 +65,14 @@
 .pet-form-species { display:flex; gap:16px; align-items:center; padding:10px; background:#f0f6ee; border-radius:14px; }
 .pet-form-species>span:not(.pet-visual) { min-width:0; overflow-wrap:anywhere; }
 .pet-form-species small { display:block; }
+.pet-form-preview { display:grid; grid-template-columns:100px minmax(0,1fr); align-items:center; gap:16px; padding:16px; border:1px solid #c2d6bc; border-radius:18px; background:#e8f4e9; }
+.pet-form-preview--koki { border-color:#cde3df; background:#e2f2ef; }
+.pet-form-preview--kuning { border-color:#e8d9c1; background:#f5ead7; }
+.pet-form-preview__visual { min-width:0; height:128px; }
+.pet-form-preview__copy { display:grid; gap:5px; min-width:0; overflow-wrap:anywhere; font-size:.85rem; line-height:1.45; }
+.pet-form-preview__copy>strong { font-size:1.1rem; color:#005c36; line-height:1.3; }
+.pet-form-preview__label { font-size:.75rem; color:#58685b; font-weight:700; }
+.pet-form-preview__copy>small { color:#58685b; }
 .pet-picker,.pet-care-actions { display:grid; gap:12px; margin-block:16px; }
 .pet-picker>button { display:flex; gap:14px; align-items:center; text-align:left; padding:12px; border:1px solid #d5e2d1; border-radius:14px; min-width:0; background:#fffefa; }
 .pet-picker>button>span:last-child { min-width:0; overflow-wrap:anywhere; }

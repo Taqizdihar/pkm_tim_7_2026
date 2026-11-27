@@ -27,6 +27,8 @@ Pet adalah budidaya nyata milik anggota; spesies adalah isi katalog bersama. Ber
 
 Formulir tambah memakai kategori lalu jenis terbit, nama saran yang dapat diubah, mode, jumlah, lokasi opsional dan konfirmasi kepemilikan. Rawat Bersama membatasi satu jenis dan membedakan jumlah rekaman Pet dari jumlah tanaman/ekor. Tombol simpan melaporkan sukses sesudah respons backend. Indikator dilabeli catatan virtual. Ilustrasi yang tersedia tetap digunakan; jenis tanpa aset memakai simbol kategori dan nama yang benar. `PetVisual` terpisah dari kepemilikan agar renderer Layered 2D dapat ditambahkan kelak; tidak ada animasi baru pada tahap ini.
 
+Formulir menampilkan pratinjau statis dari ilustrasi katalog beserta nama, jenis, mode dan jumlah yang sedang diisi. Pratinjau tidak membuat rekaman Pet. Pilihan satu tanaman/hewan menyembunyikan isian jumlah dan menyimpan nilai satu; isian jumlah hanya tampil untuk kelompok. Formulir tambah, ubah dan tinjau memakai renderer yang sama, termasuk pengganti netral untuk ilustrasi yang belum tersedia.
+
 Daftar Pet memakai satu kolom di ponsel, dua pada layar menengah dan tiga ketika ruang cukup. Dialog mengikuti panel bawah yang sama, bergulir pada konten panjang dan terpusat pada desktop. Semua pilihan memakai input native, label terlihat, tombol minimal 44 px dan fokus keyboard. Konsep individual/kelompok dan kebijakan kegiatan bersama masih menunggu tinjauan pembimbing PKM.
 
 ### Tata letak adaptif

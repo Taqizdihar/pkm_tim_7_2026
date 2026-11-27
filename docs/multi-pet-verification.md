@@ -127,6 +127,12 @@ Visual direction follows DESIGN.md: ENERGY 2 / RHYTHM 2 / MOTION 1, existing lea
 
 Calculated contrast for new text pairings: leaf green `#006A3E` on `#FFFEFA` 6.65:1, secondary `#58685B` on `#E8F4E9` 5.23:1, and main `#2B1704` on `#FFF8F5` 16.30:1. Other checked new green/paper combinations exceeded 4.5:1. This calculation does not claim a full assistive-technology audit.
 
+### Form preview refinement
+
+The quantity input is now shown only in group mode. Individual creation, editing and legacy review still submit quantity one. A static preview follows the selected catalog illustration, draft nickname, mode and physical quantity; editing uses the existing Pet's species and visual state. The renderer accepts visual data without requiring a fabricated owned ID. Catalog species without media retain a correctly named neutral preview. No animation or new illustration was added.
+
+For this refinement, frontend TypeScript and production build passed, along with seven new form browser cases and three existing creation/edit/archive, legacy-review and missing-image regression cases. Screenshots at 320, 390, 768 and 1440 px were captured; the 320 and 1440 px renders were visually inspected. Enlarged text and keyboard dismissal also passed. Preview text contrast across the three category backgrounds is at least 4.97:1. These focused checks used browser fixtures and made no live database writes or external AI calls.
+
 ## Windows startup
 
 Keep the existing `backend/.env`, MySQL credentials and Gemini keys. Start MySQL in Laragon, apply only the missing migration manually, and use two PowerShell terminals:
