@@ -4,10 +4,18 @@ import { z } from 'zod';
 import type { Pool } from 'mysql2/promise';
 import { adminCatalog, resources, idSchema } from './catalog.js';
 import { saveMedia } from './media.js';
+import { createAI, type AIService } from '../../integrations/ai/router.js';
+import rateLimit from 'express-rate-limit';
 
-export function adminRouter(pool: Pool, uploadRoot: string) {
+export function adminRouter(pool: Pool, uploadRoot: string,ai:AIService=createAI()) {
   const router = Router();
   const catalog = adminCatalog(pool);
+  router.get('/ai/status',(_req,res)=>res.json({success:true,data:ai.diagnostics()}));
+  router.post('/ai/test',rateLimit({windowMs:60000,limit:2,keyGenerator:(_req,res)=>String(res.locals.admin.id),standardHeaders:'draft-8',legacyHeaders:false,
+    message:{success:false,error:{code:'RATE_LIMIT',message:'Uji koneksi maksimal dua kali per menit.'}}}),async(req,res)=>{
+    z.object({}).strict().parse(req.body);
+    res.json({success:true,data:await ai.testConnection()});
+  });
   router.get('/dashboard', async (_req,res) => res.json({ success: true, data: await catalog.dashboard() }));
   for (const resource of resources) {
     router.get(`/${resource}`, async (req,res) => {

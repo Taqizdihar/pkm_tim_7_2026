@@ -40,7 +40,6 @@ export function RiwayatChatScreen({ conversations, activeConversationId, onBackT
     <div className="sc-screen sc-history">
       <header className="sc-header"><button type="button" className="sc-icon-button" onClick={onBackToChat} aria-label="Kembali ke Tanya Tani"><ArrowLeft size={23} /></button><div><h1>Riwayat konsultasi</h1><p>{conversations.length} percakapan dimuat dari akun Anda</p></div></header>
       <main className="sc-main">
-        {onLoadMore&&<button type="button" className="sc-button sc-button-light" onClick={onLoadMore}>Muat percakapan sebelumnya</button>}
         <button type="button" className="sc-button sc-button-primary sc-history-new" onClick={() => { playPop(); onNewChat(); }}><Plus size={20} />Mulai pertanyaan baru</button>
         <div className="sc-history-search"><label htmlFor="sc-history-search">Cari percakapan</label><div className="sc-input-wrap"><Search size={20} aria-hidden="true" /><input id="sc-history-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari tanaman atau topik" /></div>{query && <button type="button" className="sc-search-clear" onClick={() => setQuery('')}>Hapus pencarian<X size={15} /></button>}</div>
 
@@ -60,6 +59,8 @@ export function RiwayatChatScreen({ conversations, activeConversationId, onBackT
             <button type="button" className="sc-delete-conversation" onClick={() => setDeleteTarget(conversation)} aria-label={`Hapus percakapan ${conversation.title}`}><Trash2 size={18} /><span>Hapus</span></button>
           </article>)}</div></section>;
         })}</div>}
+        {onLoadMore&&<button type="button" className="sc-button sc-button-light" onClick={onLoadMore}>Muat percakapan sebelumnya</button>}
+        {query&&onLoadMore&&<p className="sc-history-storage">Pencarian mencakup percakapan yang sudah dimuat. Muat halaman sebelumnya untuk mencari riwayat yang lebih lama.</p>}
         <p className="sc-history-storage"><BookOpen size={16} aria-hidden="true" />Riwayat tersimpan pada akun Anda dan dapat dibuka setelah masuk.</p>
       </main>
 

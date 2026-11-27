@@ -69,6 +69,8 @@ function normalizeMessage(value: unknown, conversationId: string, index: number)
     timestamp: typeof value.timestamp === 'string' ? value.timestamp.slice(0, 30) : '',
     ...(photoUrl ? { photoUrl, photoName: typeof value.photoName === 'string' ? value.photoName.slice(0, 200) : 'Foto kebun' } : {}),
     ...(diagnosis ? { diagnosis } : {}),
+    ...(isRecord(value.providerMetadata) && ['gemini','rag','local'].includes(String(value.providerMetadata.provider)) ? {providerMetadata: value.providerMetadata as unknown as ChatMessage['providerMetadata']} : {}),
+    ...(isRecord(value.request) && typeof value.request.client_request_id === 'string' ? {request:value.request as unknown as ChatMessage['request']} : {}),
   };
 }
 

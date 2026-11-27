@@ -15,6 +15,7 @@
     "admin:disable": "tsx src/cli.ts disable"
   },
   "dependencies": {
+    "@google/genai": "^3.6.1",
     "@inquirer/prompts": "^8.8.1",
     "argon2": "^0.45.2",
     "cookie-parser": "^1.4.7",

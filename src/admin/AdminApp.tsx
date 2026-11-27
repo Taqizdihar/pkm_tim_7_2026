@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Leaf, LogOut, Plus, ArrowLeft, LayoutDashboard, Sprout, ListChecks, BookOpen, Settings2, Menu, X, Layers3, CheckCircle2, FilePenLine, Users } from 'lucide-react';
+import {AIDiagnostics} from './AIDiagnostics.tsx';
 import {Members} from './Members.tsx';
 import { api, ApiError } from './api.ts';
 import './admin.css';
@@ -158,7 +159,7 @@ function SpeciesExtras({id,detail,onChanged}:{id:string;detail:Row;onChanged:()=
 function Settings() {
   const [data,setData]=useState<Row>({app_name:'Dewi Sri',welcome_message:''}),[error,setError]=useState(''),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
   useEffect(()=>{api('/settings').then(value=>setData(previous=>({...previous,...value}))).catch(err=>setError(err.message));},[]);
-  return <><h1>Pengaturan aplikasi</h1><p>Pengaturan tampilan publik. Integrasi RAG, cuaca langsung, dan analisis foto AI belum tersedia.</p><form onSubmit={async event=>{event.preventDefault();setBusy(true);try{await api('/settings','PATCH',data);setMessage('Pengaturan tersimpan.');setError('');}catch(err){setError((err as Error).message);}finally{setBusy(false);}}}>
+  return <><h1>Pengaturan aplikasi</h1><p>Pengaturan tampilan publik dan status integrasi Tanya Tani.</p><form onSubmit={async event=>{event.preventDefault();setBusy(true);try{await api('/settings','PATCH',data);setMessage('Pengaturan tersimpan.');setError('');}catch(err){setError((err as Error).message);}finally{setBusy(false);}}}>
     <label>Nama aplikasi<input value={data.app_name} required maxLength={100} onChange={e=>setData({...data,app_name:e.target.value})}/></label><label>Pesan sambutan<textarea value={data.welcome_message} maxLength={500} onChange={e=>setData({...data,welcome_message:e.target.value})}/></label><button className="primary" disabled={busy}>Simpan pengaturan</button><ErrorNote text={error}/>{message&&<p className="admin-success" role="status">{message}</p>}
-  </form></>;
+  </form><AIDiagnostics/></>;
 }

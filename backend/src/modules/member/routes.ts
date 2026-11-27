@@ -1,5 +1,6 @@
 import { Router, type Response } from 'express';
 import multer from 'multer';
+import rateLimit from 'express-rate-limit';
 import { unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
@@ -9,7 +10,8 @@ import { id } from '../member-auth/validation.js';
 import { HttpError } from '../../utils/http.js';
 import { rows,json,bootstrap,profile,progress,journal,schedules,cultivation,performCare,owned,typeMap,localDate } from './data.js';
 import { privateImage } from './media.js';
-import { conversation,addMessage,newConversation } from './chat.js';
+import { conversation,generateTurn,newConversation,messageInput } from './chat.js';
+import { createAI, type AIService } from '../../integrations/ai/router.js';
 
 const slot=z.enum(['action1','action2','action3']);
 const slug=z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(120);
@@ -20,7 +22,7 @@ const prefs=z.object({region:z.string().trim().max(160).optional(),careFocus:z.a
   activePetType:z.enum(['tunas','koki','kuning']).optional()}).strict();
 const upload=multer({storage:multer.memoryStorage(),limits:{fileSize:5*1024*1024,files:1,fields:0}}).single('image');
 
-export function memberRouter(pool:Pool,auth:MemberAuth,root:string) {
+export function memberRouter(pool:Pool,auth:MemberAuth,root:string,ai:AIService=createAI()) {
   const router=Router();
   const user=(res:Response):string=>res.locals.member.id;
   const mutate=<T>(res:Response,action:(db:PoolConnection)=>Promise<T>)=>auth.mutate(user(res),res.locals.memberToken,action);
@@ -115,6 +117,9 @@ export function memberRouter(pool:Pool,auth:MemberAuth,root:string) {
         VALUES (?,'daily_reward',?,5,UTC_TIMESTAMP(3)) ON DUPLICATE KEY UPDATE id=id`,[user(res),localDate()]);
     });res.json({success:true,data:await bootstrap(pool,user(res))});
   });
+  router.get('/chat/capabilities',(_req,res)=>res.json({success:true,data:ai.capabilities(user(res))}));
+  const consultationLimit=rateLimit({windowMs:60000,limit:ai.rateLimit,keyGenerator:(_req,res)=>user(res),standardHeaders:'draft-8',legacyHeaders:false,
+    message:{success:false,error:{code:'RATE_LIMIT',message:'Terlalu banyak pertanyaan. Coba lagi satu menit kemudian.'}}});
   router.get('/chat/conversations',async(req,res)=>{
     const offset=page.parse(req.query).offset;
     const list=await rows(pool,`SELECT c.id,c.title,c.updated_at,(SELECT content FROM chat_messages m WHERE m.conversation_id=c.id ORDER BY m.id DESC LIMIT 1) AS snippet
@@ -122,8 +127,8 @@ export function memberRouter(pool:Pool,auth:MemberAuth,root:string) {
     res.json({success:true,data:list.map(c=>({...c,id:String(c.id),updatedAt:c.updated_at instanceof Date?new Date(c.updated_at.getTime()-c.updated_at.getTimezoneOffset()*60000).toISOString():c.updated_at,messages:[]}))});
   });
   router.post('/chat/conversations',async(req,res)=>{
-    const b=z.object({title:z.string().trim().min(1).max(200).default('Percakapan baru')}).strict().parse(req.body);
-    const key=await mutate(res,db=>newConversation(db,user(res),b.title));res.status(201).json({success:true,data:await conversation(pool,user(res),key)});
+    const b=z.object({title:z.string().trim().min(1).max(200).default('Percakapan baru'),client_request_id:z.string().uuid().optional()}).strict().parse(req.body);
+    const key=await mutate(res,db=>newConversation(db,user(res),b.title,b.client_request_id));res.status(201).json({success:true,data:await conversation(pool,user(res),key)});
   });
   router.get('/chat/conversations/:id',async(req,res)=>res.json({success:true,data:await conversation(pool,user(res),id.parse(req.params.id),page.parse(req.query).offset)}));
   router.patch('/chat/conversations/:id',async(req,res)=>{
@@ -134,19 +139,14 @@ export function memberRouter(pool:Pool,auth:MemberAuth,root:string) {
     const key=id.parse(req.params.id);
     await mutate(res,async db=>{await owned(db,'chat_conversations',key,user(res));await db.execute('DELETE FROM chat_conversations WHERE id=? AND user_id=?',[key,user(res)]);});res.json({success:true});
   });
-  router.post('/chat/conversations/:id/messages',async(req,res)=>{
-    const key=id.parse(req.params.id),b=z.object({content:z.string().trim().min(1).max(20000),media_id:id.optional(),species:slug.optional()}).strict().parse(req.body);
-    await mutate(res,async db=>{
-      if(b.media_id) {
-        const media=await rows(db,"SELECT id FROM media_assets WHERE id=? AND uploaded_by=? AND visibility='private'",[b.media_id,user(res)]);
-        if(!media.length) throw new HttpError(404,'Gambar tidak ditemukan.');
-      }
-      await addMessage(db,user(res),key,b.content,b.media_id,b.species);
-    });res.json({success:true,data:await conversation(pool,user(res),key)});
+  router.post('/chat/conversations/:id/messages',consultationLimit,async(req,res)=>{
+    const key=id.parse(req.params.id),b=messageInput.parse(req.body);
+    await generateTurn(pool,auth,ai,root,res.locals.member,res.locals.memberToken,key,b);
+    res.json({success:true,data:await conversation(pool,user(res),key)});
   });
-  router.post('/chat/media',upload,async(req,res)=>{
+  router.post('/chat/media',consultationLimit,upload,async(req,res)=>{
     if(!req.file) throw new HttpError(422,'Pilih gambar.');let target='';
-    try {const data=await mutate(res,async db=>{const media=await privateImage(db,root,user(res),req.file!.buffer);target=media.target;return {id:media.id};});res.status(201).json({success:true,data});}
+    try {const data=await mutate(res,async db=>{const media=await privateImage(db,root,user(res),req.file!.buffer,'Foto konsultasi');target=media.target;return {id:media.id};});res.status(201).json({success:true,data});}
     catch(e){if(target)await unlink(target).catch(()=>{});throw e;}
   });
   return router;

@@ -8,7 +8,18 @@ Administrator tetap dibuat melalui CLI dan masuk di `/admin/login`. Cookie HttpO
 
 Pengelola mengisi identitas dan kata sandi awal sedikitnya 6 karakter, lalu menyampaikannya secara pribadi. Akun baru langsung aktif tanpa pilihan status pada formulir pembuatan, dan secara default wajib mengganti kata sandi pada `/change-password`. Untuk anggota yang lupa kata sandi, gunakan **Atur Ulang Kata Sandi** di CMS; semua sesi lama dicabut. Belum ada pemulihan WhatsApp, SMS, atau email. Kata sandi anggota mendukung frasa 6–200 karakter tanpa aturan komposisi dan tanpa pemotongan atau pengubahan spasi.
 
-Profil, preferensi, pilihan jenis dan progres Pet, jadwal, jurnal, hadiah harian, serta percakapan disimpan di MySQL. React menyimpan salinan di memori setelah pemeriksaan sesi. Server menentukan efek perawatan, tanggal Asia/Jakarta, poin, dan kepemilikan setiap rekaman. Foto pribadi disimpan di direktori privat server dan hanya tersedia lewat endpoint anggota yang memeriksa pemiliknya. Tanya Tani tetap panduan deterministik, tanpa penyedia AI eksternal.
+Profil, preferensi, pilihan jenis dan progres Pet, jadwal, jurnal, hadiah harian, serta percakapan disimpan di MySQL. React menyimpan salinan di memori setelah pemeriksaan sesi. Server menentukan efek perawatan, tanggal Asia/Jakarta, poin, dan kepemilikan setiap rekaman. Foto pribadi disimpan di direktori privat server dan hanya tersedia lewat endpoint anggota yang memeriksa pemiliknya. Tanya Tani mendukung Gemini untuk teks, konteks percakapan, dan foto, dengan panduan lokal sebagai fallback. Pemrosesan eksternal dibatasi akun demo yang diizinkan backend dan persetujuan per permintaan.
+
+### Mengaktifkan Gemini untuk demonstrasi
+
+1. Terapkan **sekali secara manual** [`05_ai_consultation.sql`](docs/database/05_ai_consultation.sql) melalui phpMyAdmin pada database yang sudah memiliki skrip 04. Skrip 05 hanya menambah kolom/index deduplikasi; jumlah tabel tetap 21. Tidak dijalankan otomatis dan belum diterapkan oleh perubahan kode ini.
+2. Simpan kedua kunci hanya di **`backend/.env`**: `GEMINI_API_KEY` untuk utama dan `GEMINI_API_KEY_FALLBACK` untuk cadangan. Contoh aman ada di [`backend/.env.example`](backend/.env.example). Pertahankan konfigurasi database lokal Anda.
+3. Isi `GEMINI_MODEL=gemini-3.5-flash-lite`, `AI_EXTERNAL_MODE=demo`, dan `AI_DEMO_MEMBER_IDS` dengan ID database akun anggota khusus demo (misalnya `7,12`, hanya bila itu benar ID akun demo Anda). Kunci/model belum membuktikan koneksi berhasil. Jangan memasukkan anggota nyata ke daftar ini tanpa kebijakan pemrosesan yang sesuai.
+4. Mulai ulang backend, buka CMS **Pengaturan → Integrasi AI → Uji Koneksi AI** untuk uji teks nyata yang mengonsumsi kuota, lalu gunakan akun demo untuk teks lanjutan dan foto contoh tanpa data pribadi. Kunci tidak pernah memakai awalan `VITE_`, masuk browser, atau disimpan di pengaturan CMS.
+
+Routing saat ini: Gemini utama → kunci Gemini cadangan untuk kegagalan teknis yang sesuai → panduan lokal. Kunci dalam satu proyek berbagi kuota; aplikasi tidak merotasi kunci untuk mengulang kuota habis atau penolakan keamanan. Batas adapter memungkinkan RAG → Gemini → lokal setelah kontrak RAG tersedia; URL RAG saja tidak mengaktifkan layanan. Foto tervalidasi dikirim sebagai byte WebP inline, tidak sebagai URL privat. Metadata provider/model dan riwayat tetap di MySQL.
+
+Panduan lengkap konfigurasi, batas privasi free tier, retry/lease transaksi, dan hasil pengujian tersedia di [`backend/README.md`](backend/README.md) dan [`docs/ai-consultation-verification.md`](docs/ai-consultation-verification.md). Integrasi SDK diuji dengan mock; koneksi Gemini hidup dan alur MySQL/Gemini lokal belum diverifikasi tanpa kunci dan migrasi manual.
 
 **Skema:** pelengkap [`04_member_auth.sql`](docs/database/04_member_auth.sql) memperluas `users` dan menambah `member_sessions`, sehingga total menjadi **21 tabel**. Pada pemeriksaan 26 November 2026, MySQL lokal sudah memiliki perluasan tersebut. Bila belum tersedia di lingkungan lain: **phpMyAdmin → dewi_sri → SQL → Paste SQL → Go**. Bagian `ALTER TABLE` hanya dijalankan sekali. Jangan menjalankan ulang schema/seed atau skrip 04 pada database yang sudah diperluas. Aplikasi tidak menjalankan DDL otomatis.
 
@@ -69,7 +80,7 @@ Progres dan jadwal disimpan pada rekaman budidaya per akun dan spesies. Pemiliha
 
 ## Batas frontend dan titik integrasi
 
-- Kamera/galeri melampirkan foto; panduan saat ini memakai jenis, kebutuhan, dan keterangan pengguna. Gambar belum dianalisis AI.
+- Kamera/galeri mendukung pratinjau, jenis yang belum diketahui, tujuan konsultasi, dan persetujuan pemrosesan eksternal. Gemini menerima gambar sebenarnya jika diizinkan; fallback lokal dengan jelas menyatakan foto tidak dianalisis.
 - Jawaban lokal terpisah di `localGuide.ts`, sehingga penyedia jawaban backend dapat disambungkan melalui lapisan ini dan state konsultasi tanpa mengganti tampilan.
 - Panel cuaca menampilkan status belum terhubung. Lokasi profil sudah tersedia sebagai masukan layanan cuaca kelak.
 - Jadwal berulang setiap hari. Tanda pengingat hanya tampil di beranda saat aplikasi dibuka dan diaktifkan; belum ada push notification.
@@ -84,9 +95,9 @@ Arsitektur responsif aplikasi anggota dan CMS, matriks ukuran layar, hasil uji b
 
 ## Rancangan backend dan database MySQL (tahap pengembangan)
 
-> **Status:** API katalog publik, CMS, autentikasi admin dan anggota, serta persistensi pribadi tersedia. Skrip 03 dan 04 adalah perluasan manual. Bagian pemasangan schema/seed berikut hanya untuk database baru yang kosong, bukan database pengembangan yang sudah berisi data.
+> **Status:** API katalog publik, CMS, autentikasi admin dan anggota, serta persistensi pribadi tersedia. Skrip 03, 04, dan 05 adalah perluasan manual. Bagian pemasangan schema/seed berikut hanya untuk database baru yang kosong, bukan database pengembangan yang sudah berisi data.
 
-Tujuan desain: anggota KWT Dewi Sri dapat mencatat budidaya dan riwayatnya; admin pengembang dapat menambah kategori/jenis (misalnya **Ayam Jantan**), mengganti gambar sesuai kondisi, mengelola tindakan dan panduan; integrasi Tanya Tani nantinya melalui backend ke layanan RAG. API key dan password **tidak** disimpan dalam repository atau pengaturan publik.
+Tujuan desain: anggota KWT Dewi Sri dapat mencatat budidaya dan riwayatnya; admin pengembang dapat menambah kategori/jenis (misalnya **Ayam Jantan**), mengganti gambar sesuai kondisi, mengelola tindakan dan panduan; Tanya Tani memakai adapter backend Gemini dengan batas integrasi RAG untuk tahap berikutnya. API key dan password **tidak** disimpan dalam repository atau pengaturan publik.
 
 ### Skrip SQL untuk phpMyAdmin (tanpa fitur Import)
 

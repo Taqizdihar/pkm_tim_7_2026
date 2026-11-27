@@ -42,6 +42,13 @@ async function touchDrag(page: Page, x: number, y: number, dx: number, dy: numbe
 
 for (const width of [320, 390]) test(`all member bottom sheets slide in and drag down at ${width}px`, async ({ page }) => {
   test.setTimeout(90000);
+  await page.addInitScript(()=>{
+    const animate=Element.prototype.animate;
+    Element.prototype.animate=function(frames,options){
+      if(this instanceof HTMLDialogElement)(this as any).__recordedFrames=frames;
+      return animate.call(this,frames,options);
+    };
+  });
   const fixture = await memberFixture(page);
   await page.setViewportSize({ width, height: 844 });
   const cases = [
@@ -57,8 +64,9 @@ for (const width of [320, 390]) test(`all member bottom sheets slide in and drag
     await opener.click();
     const sheet = page.getByRole('dialog');
     await expect(sheet).toHaveAttribute('data-sheet', 'true');
-    const entrance = await sheet.evaluate(element => element.getAnimations().map(animation => (animation.effect as KeyframeEffect).getKeyframes()));
-    expect(entrance.some(frames => frames[0]?.transform?.toString().startsWith('translateY(')), name).toBe(true);
+    // Record the real call: a busy browser can finish the 280 ms entrance before inspection.
+    const entrance = await sheet.evaluate(element => (element as any).__recordedFrames as Keyframe[]);
+    expect(entrance[0]?.transform?.toString().startsWith('translateY('), name).toBe(true);
     await rest(sheet);
     const bounds = (await sheet.boundingBox())!;
     expect(Math.abs(bounds.y + bounds.height - 844), name).toBeLessThan(2);

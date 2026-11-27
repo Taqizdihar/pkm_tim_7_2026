@@ -1,5 +1,5 @@
-// Server-side integration boundary. Add a provider only after its API contract and
-// credentials are available; current consultation remains local in the frontend.
-export interface RagProvider {
-  answer(input: { question: string; userId: string }): Promise<{ answer: string; sources?: string[] }>;
-}
+import type { ConsultationProvider } from './ai/types.js';
+
+// Supply a real adapter to createAI only after its contract and privacy policy are agreed.
+// No HTTP request is made to RAG_API_URL by the placeholder boundary.
+export type RagProvider = ConsultationProvider & { id: 'rag' };
