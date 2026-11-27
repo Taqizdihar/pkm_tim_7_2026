@@ -117,7 +117,7 @@ export function memberRouter(pool:Pool,auth:MemberAuth,root:string,ai:AIService=
         VALUES (?,'daily_reward',?,5,UTC_TIMESTAMP(3)) ON DUPLICATE KEY UPDATE id=id`,[user(res),localDate()]);
     });res.json({success:true,data:await bootstrap(pool,user(res))});
   });
-  router.get('/chat/capabilities',(_req,res)=>res.json({success:true,data:ai.capabilities(user(res))}));
+  router.get('/chat/capabilities',(_req,res)=>res.json({success:true,data:ai.capabilities()}));
   const consultationLimit=rateLimit({windowMs:60000,limit:ai.rateLimit,keyGenerator:(_req,res)=>user(res),standardHeaders:'draft-8',legacyHeaders:false,
     message:{success:false,error:{code:'RATE_LIMIT',message:'Terlalu banyak pertanyaan. Coba lagi satu menit kemudian.'}}});
   router.get('/chat/conversations',async(req,res)=>{

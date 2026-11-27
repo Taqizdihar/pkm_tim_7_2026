@@ -20,7 +20,6 @@ const schema = z.object({
   AI_FALLBACK_PROVIDER: z.enum(['gemini', 'local']).default('local'),
   AI_LOCAL_FALLBACK_ENABLED: boolean.default(true),
   AI_EXTERNAL_MODE: z.enum(['off', 'demo']).default('demo'),
-  AI_DEMO_MEMBER_IDS: z.string().default('').refine(value => !value || value.split(',').every(id => /^[1-9][0-9]{0,19}$/.test(id.trim()))),
   GEMINI_API_KEY: z.string().trim().default(''),
   GEMINI_API_KEY_FALLBACK: z.string().trim().default(''),
   GEMINI_MODEL: z.string().regex(/^[a-zA-Z0-9._-]{1,100}$/).default('gemini-3.5-flash-lite'),

@@ -26,7 +26,7 @@ async function fixture(page:Page) {
     if(endpoint==='/admin/care-actions')return send(actions);
     if(endpoint==='/admin/guides')return send(guides);
     if(endpoint==='/admin/settings')return send({app_name:'Dewi Sri',welcome_message:''});
-    if(endpoint==='/admin/ai/status')return send({enabled:false,primary:'gemini',fallback:'local',localFallback:true,externalMode:'off',demoAccountCount:0,gemini:{configured:false,state:'not_configured',model:'gemini-3.5-flash-lite',keys:[]},rag:{state:'awaiting_contract'},lastTest:null});
+    if(endpoint==='/admin/ai/status')return send({enabled:false,primary:'gemini',fallback:'local',localFallback:true,externalMode:'off',memberAccess:'authenticated_members',gemini:{configured:false,state:'not_configured',model:'gemini-3.5-flash-lite',keys:[]},rag:{state:'awaiting_contract'},lastTest:null});
     if(endpoint==='/admin/species'&&req.method()==='POST'){const p={...req.postDataJSON(),id:'101',actions:[],media:[]};pets.push(p);return send({id:p.id},201);}
     if(endpoint==='/admin/species')return send(pets);
     if(endpoint==='/admin/species/101'&&req.method()==='PATCH'){Object.assign(pets[0],req.postDataJSON());return send({id:'101'});}

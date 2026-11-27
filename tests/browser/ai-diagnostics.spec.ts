@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 
 test('CMS AI diagnostics stays read-only until an explicit quota-consuming test',async({page})=>{
   let calls=0;
-  const status={enabled:true,primary:'gemini',fallback:'local',localFallback:true,externalMode:'demo',demoAccountCount:1,
+  const status={enabled:true,primary:'gemini',fallback:'local',localFallback:true,externalMode:'demo',memberAccess:'authenticated_members',
     gemini:{configured:true,state:'not_tested',model:'gemini-3.5-flash-lite',keys:[{slot:'primary',state:'ready'},{slot:'fallback',state:'ready'}]},rag:{state:'awaiting_contract'},lastTest:null as any};
   await page.route('**/api/v1/admin/**',route=>{
     const p=new URL(route.request().url()).pathname;
@@ -14,7 +14,7 @@ test('CMS AI diagnostics stays read-only until an explicit quota-consuming test'
   });
   for(const width of [320,768,1440]){
     await page.setViewportSize({width,height:900});await page.goto('/admin/settings');
-    await expect(page.getByRole('heading',{name:'Integrasi AI',exact:true})).toBeVisible();expect(calls).toBe(0);
+    await expect(page.getByRole('heading',{name:'Integrasi AI',exact:true})).toBeVisible();await expect(page.getByText('Semua anggota yang masuk, dengan persetujuan per permintaan',{exact:true})).toBeVisible();expect(calls).toBe(0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
   }
   await page.getByRole('button',{name:'Uji Koneksi AI',exact:true}).click();await expect(page.getByText(/Uji terakhir: Berhasil diuji/)).toBeVisible();expect(calls).toBe(1);

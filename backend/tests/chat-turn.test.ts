@@ -14,7 +14,7 @@ import {GeminiProvider} from '../src/integrations/ai/gemini.js';
 import {loadEnv} from '../src/config/env.js';
 import {HttpError} from '../src/utils/http.js';
 
-const env=(extra:Record<string,string>={})=>loadEnv({DB_HOST:'fixture',DB_PORT:'3306',DB_USER:'fixture',DB_PASSWORD:'',DB_NAME:'fixture',FRONTEND_ORIGIN:'http://localhost:3000',GEMINI_API_KEY:'fixture',AI_DEMO_MEMBER_IDS:'7',...extra});
+const env=(extra:Record<string,string>={})=>loadEnv({DB_HOST:'fixture',DB_PORT:'3306',DB_USER:'fixture',DB_PASSWORD:'',DB_NAME:'fixture',FRONTEND_ORIGIN:'http://localhost:3000',GEMINI_API_KEY:'fixture',...extra});
 const member={id:'7',name:'Anggota Rahasia',email:'rahasia@example.test',phone_number:'081234567890',must_change_password:0};
 
 function store(){

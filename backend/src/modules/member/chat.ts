@@ -103,7 +103,7 @@ export async function generateTurn(pool:Pool,auth:MemberAuth,ai:AIService,root:s
     if(input.species)species=(await rows(pool,"SELECT name FROM species WHERE slug=? AND status='published'",[input.species]))[0]?.name;
     const image=input.media_id ? await consultationImage(pool,root,user,input.media_id,key,true) : undefined;
     const response=await ai.generate({question:redact(content,personal),context,species,intent:input.intent,image,
-      externalAllowed:ai.externalFor(user)&&input.external_consent},localProvider(()=>localReply(pool,content,input.species)));
+      externalAllowed:ai.externalEnabled()&&input.external_consent},localProvider(()=>localReply(pool,content,input.species)));
     await auth.mutate(user,token,async db=>{
       const c=await rows(db,'SELECT id FROM chat_conversations WHERE id=? AND user_id=? FOR UPDATE',[key,user]);
       if(!c.length)throw new HttpError(404,'Percakapan telah dihapus.');

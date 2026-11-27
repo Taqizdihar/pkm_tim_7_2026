@@ -8,7 +8,7 @@ import {ProviderError,normalizeError,bounded} from '../src/integrations/ai/error
 import {redact} from '../src/integrations/ai/prompts.js';
 import type {ConsultationProvider,ConsultationRequest} from '../src/integrations/ai/types.js';
 
-export const config=(extra:Record<string,string>={})=>loadEnv({DB_HOST:'fixture',DB_PORT:'3306',DB_USER:'fixture',DB_PASSWORD:'',DB_NAME:'fixture',FRONTEND_ORIGIN:'http://localhost:3000',GEMINI_API_KEY:'fixture-primary',GEMINI_API_KEY_FALLBACK:'fixture-secondary',AI_DEMO_MEMBER_IDS:'7',...extra});
+export const config=(extra:Record<string,string>={})=>loadEnv({DB_HOST:'fixture',DB_PORT:'3306',DB_USER:'fixture',DB_PASSWORD:'',DB_NAME:'fixture',FRONTEND_ORIGIN:'http://localhost:3000',GEMINI_API_KEY:'fixture-primary',GEMINI_API_KEY_FALLBACK:'fixture-secondary',...extra});
 const input:ConsultationRequest={question:'Mengapa daun sorgum kuning?',context:[{role:'user',text:'Saya menanam sorgum.'},{role:'assistant',text:'Bagaimana kondisi tanahnya?'}],intent:'condition',externalAllowed:true};
 const local=localProvider(async()=> 'Panduan umum dari aplikasi.');
 const ok={text:'Periksa kelembapan tanah.',modelVersion:'fixture-model',usageMetadata:{promptTokenCount:24,candidatesTokenCount:12}};
@@ -17,9 +17,9 @@ const factory=(handler:(key:string,input:any)=>Promise<any>)=>(key:string):Gemin
 test('AI environment parses false correctly, validates limits and permits missing optional keys',()=>{
   const env=config({AI_ENABLED:'false',RAG_ENABLED:'false',GEMINI_API_KEY:'',GEMINI_API_KEY_FALLBACK:''});
   assert.equal(env.AI_ENABLED,false);assert.equal(env.RAG_ENABLED,false);
-  for(const values of [{AI_ENABLED:'yes'},{AI_MAX_CONTEXT_MESSAGES:'999'},{AI_DEMO_MEMBER_IDS:'7,abc'},{AI_REQUEST_TIMEOUT_MS:'0'}])assert.throws(()=>config(values));
-  assert.equal(createAI(env).capabilities('7').externalEnabled,false);
-  assert.equal(createAI(config({AI_PRIMARY_PROVIDER:'local',AI_FALLBACK_PROVIDER:'local'})).capabilities('7').externalEnabled,false);
+  for(const values of [{AI_ENABLED:'yes'},{AI_MAX_CONTEXT_MESSAGES:'999'},{AI_REQUEST_TIMEOUT_MS:'0'}])assert.throws(()=>config(values));
+  assert.equal(createAI(env).capabilities().externalEnabled,false);
+  assert.equal(createAI(config({AI_PRIMARY_PROVIDER:'local',AI_FALLBACK_PROVIDER:'local'})).capabilities().externalEnabled,false);
   assert.equal(normalizeError(null).code,'network');
 });
 
@@ -105,7 +105,7 @@ test('external privacy eligibility, redaction, concurrency bound, and explicit c
   let calls=0;
   const gemini=new GeminiProvider(config(),factory(async()=>{calls++;return ok;}));
   const ai=createAI(config(),gemini);
-  assert.equal(ai.externalFor('8'),false);assert.equal(ai.externalFor('7'),true);
+  assert.equal(ai.externalEnabled(),true);assert.equal(ai.capabilities().externalEnabled,true);
   assert.equal((await ai.generate({...input,externalAllowed:false},local)).provider,'local');assert.equal(calls,0);
   assert.equal(ai.diagnostics().gemini.state,'not_tested');
   await ai.testConnection();assert.equal(calls,1);assert.equal(ai.diagnostics().lastTest?.state,'verified');
@@ -125,4 +125,14 @@ test('timeout aborts the provider and the total deadline allows local recovery',
   const env=config({AI_REQUEST_TIMEOUT_MS:'1000',AI_TOTAL_TIMEOUT_MS:'1000'});
   const provider=new GeminiProvider(env,factory(async()=>new Promise(()=>{})));
   assert.equal((await createAI(env,provider).generate(input,local)).provider,'local');
+});
+
+test('global AI switches still prevent external generation even when a caller consents',async()=>{
+  for(const settings of [{AI_ENABLED:'false'},{AI_EXTERNAL_MODE:'off'}]) {
+    const env=config(settings);let calls=0;
+    const ai=createAI(env,new GeminiProvider(env,factory(async()=>{calls++;return ok;})));
+    assert.equal(ai.externalEnabled(),false);assert.equal(ai.capabilities().externalEnabled,false);
+    const result=await ai.generate(input,local);
+    assert.equal(result.provider,'local');assert.equal(result.fallbackReason,'disabled');assert.equal(calls,0);
+  }
 });

@@ -35,3 +35,17 @@ test('consultation rate limit is keyed by member and cannot be bypassed with cli
   assert.equal((await request(app).post('/chat/conversations/1/messages').send({content:'invalid'})).status,422);
   assert.equal((await request(app).post('/chat/conversations/1/messages').send({content:'another invalid'})).status,429);
 });
+
+test('all authenticated members receive AI capabilities regardless of the retired demo ID setting',async()=>{
+  const env=loadEnv({DB_HOST:'fixture',DB_PORT:'3306',DB_USER:'fixture',DB_PASSWORD:'',DB_NAME:'fixture',FRONTEND_ORIGIN:'http://localhost:3000',GEMINI_API_KEY:'fixture',AI_DEMO_MEMBER_IDS:'7'});
+  let calls=0;
+  const ai=createAI(env,new GeminiProvider(env,()=>({models:{generateContent:async()=>{calls++;return {text:'Fixture'} as any;}}})));
+  const app=express();app.use((_req,res,next)=>{res.locals.member={id:_req.get('x-fixture-member')};next();});app.use(memberRouter({} as any,{} as any,'unused',ai));
+  for(const id of ['7','8']) {
+    const response=await request(app).get('/chat/capabilities').set('x-fixture-member',id);
+    assert.equal(response.status,200);assert.equal(response.body.data.externalEnabled,true);assert.equal(response.body.data.imageAnalysis,true);
+    assert.equal('demoAuthorized' in response.body.data,false);
+  }
+  assert.equal(calls,0);
+  assert.equal(ai.diagnostics().memberAccess,'authenticated_members');
+});

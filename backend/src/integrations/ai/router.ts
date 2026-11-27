@@ -6,17 +6,16 @@ import type { ConsultationProvider, ConsultationRequest, ConsultationResponse } 
 
 export function createAI(config?: Env, geminiOverride?: GeminiProvider, rag?: ConsultationProvider) {
   const gemini = geminiOverride ?? (config ? new GeminiProvider(config) : undefined);
-  const demoIds = new Set((config?.AI_DEMO_MEMBER_IDS || '').split(',').map(id => id.trim()).filter(Boolean));
   let concurrent = 0;
   let lastTest: { state: string; at: string; latencyMs?: number; model?: string } | null = null;
-  const externalFor = (userId: string) => Boolean(config?.AI_ENABLED && config.AI_EXTERNAL_MODE === 'demo' && demoIds.has(userId));
+  const externalEnabled = () => Boolean(config?.AI_ENABLED && config.AI_EXTERNAL_MODE === 'demo');
   const providerOrder = () => [...new Set([config?.AI_PRIMARY_PROVIDER || 'gemini', config?.AI_FALLBACK_PROVIDER || 'local', ...(config?.AI_LOCAL_FALLBACK_ENABLED !== false ? ['local' as const] : [])])];
   async function generate(request: ConsultationRequest, local: ConsultationProvider): Promise<ConsultationResponse> {
     const start = Date.now(), total = config?.AI_TOTAL_TIMEOUT_MS ?? 30000;
     let reason: string | undefined;
     for (const id of providerOrder()) {
       const provider = id === 'gemini' ? gemini : id === 'rag' ? (config?.RAG_ENABLED ? rag : undefined) : local;
-      if (id !== 'local' && (!config?.AI_ENABLED || !request.externalAllowed)) { reason = config?.AI_ENABLED ? 'privacy' : 'disabled'; continue; }
+      if (id !== 'local' && (!externalEnabled() || !request.externalAllowed)) { reason = externalEnabled() ? 'privacy' : 'disabled'; continue; }
       if (id === 'local' && config?.AI_LOCAL_FALLBACK_ENABLED === false) continue;
       if (!provider?.configured) { reason = 'not_configured'; continue; }
       if (id !== 'local' && request.image && !provider.capabilities.imageUnderstanding) { reason = 'unsupported_modality'; continue; }
@@ -35,21 +34,21 @@ export function createAI(config?: Env, geminiOverride?: GeminiProvider, rag?: Co
     }
     throw new ProviderError((reason as ProviderError['code']) || 'unavailable');
   }
-  function capabilities(userId: string) {
+  function capabilities() {
     const status = gemini?.status();
-    const externalEnabled = externalFor(userId), order=providerOrder();
+    const order=providerOrder();
     const geminiUsable=order.includes('gemini')&&Boolean(status?.configured)&&['verified','not_tested'].includes(String(status?.state));
     const ragUsable=order.includes('rag')&&Boolean(config?.RAG_ENABLED&&rag?.configured);
-    const available = externalEnabled && (geminiUsable||ragUsable);
+    const available = externalEnabled() && (geminiUsable||ragUsable);
     return { text: available || config?.AI_LOCAL_FALLBACK_ENABLED !== false, imageAnalysis: available && (geminiUsable || ragUsable&&Boolean(rag?.capabilities.imageUnderstanding)),
-      externalEnabled: available, demoAuthorized: externalEnabled, mode: available ? 'external_demo' : 'local', localFallback: config?.AI_LOCAL_FALLBACK_ENABLED !== false,
+      externalEnabled: available, mode: available ? 'external_demo' : 'local', localFallback: config?.AI_LOCAL_FALLBACK_ENABLED !== false,
       connectionVerified: Boolean(status?.lastSuccess), privacyNotice: 'Teks dan foto contoh dapat diproses layanan AI eksternal. Jangan kirim identitas, wajah, nomor HP, alamat, dokumen rahasia, atau data pribadi. Penyaringan otomatis tidak menjamin semua data pribadi terhapus.' };
   }
   return {
-    generate, capabilities, externalFor,
+    generate, capabilities, externalEnabled,
     maxContext: config?.AI_MAX_CONTEXT_MESSAGES ?? 12, rateLimit: config?.AI_MAX_REQUESTS_PER_MINUTE ?? 5, totalTimeout: config?.AI_TOTAL_TIMEOUT_MS ?? 30000,
     diagnostics: () => ({ enabled: config?.AI_ENABLED ?? false, primary: config?.AI_PRIMARY_PROVIDER ?? 'gemini', fallback: config?.AI_FALLBACK_PROVIDER ?? 'local',
-      localFallback: config?.AI_LOCAL_FALLBACK_ENABLED !== false, externalMode: config?.AI_EXTERNAL_MODE ?? 'off', demoAccountCount: demoIds.size,
+      localFallback: config?.AI_LOCAL_FALLBACK_ENABLED !== false, externalMode: config?.AI_EXTERNAL_MODE ?? 'off', memberAccess: 'authenticated_members',
       gemini: gemini?.status() ?? { configured: false, state: 'not_configured', model: config?.GEMINI_MODEL ?? 'gemini-3.5-flash-lite', keys: [], lastSuccess: null },
       rag: { configured: Boolean(config?.RAG_ENABLED && rag?.configured), state: rag?.configured ? 'configured' : 'awaiting_contract' }, lastTest }),
     async testConnection() {
