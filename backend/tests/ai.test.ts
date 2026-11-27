@@ -9,7 +9,7 @@ import {redact} from '../src/integrations/ai/prompts.js';
 import type {ConsultationProvider,ConsultationRequest} from '../src/integrations/ai/types.js';
 
 export const config=(extra:Record<string,string>={})=>loadEnv({DB_HOST:'fixture',DB_PORT:'3306',DB_USER:'fixture',DB_PASSWORD:'',DB_NAME:'fixture',FRONTEND_ORIGIN:'http://localhost:3000',GEMINI_API_KEY:'fixture-primary',GEMINI_API_KEY_FALLBACK:'fixture-secondary',...extra});
-const input:ConsultationRequest={question:'Mengapa daun sorgum kuning?',context:[{role:'user',text:'Saya menanam sorgum.'},{role:'assistant',text:'Bagaimana kondisi tanahnya?'}],intent:'condition',externalAllowed:true};
+const input:ConsultationRequest={question:'Mengapa daun sorgum kuning?',context:[{role:'user',text:'Saya menanam sorgum.'},{role:'assistant',text:'Bagaimana kondisi tanahnya?'}],intent:'condition'};
 const local=localProvider(async()=> 'Panduan umum dari aplikasi.');
 const ok={text:'Periksa kelembapan tanah.',modelVersion:'fixture-model',usageMetadata:{promptTokenCount:24,candidatesTokenCount:12}};
 const factory=(handler:(key:string,input:any)=>Promise<any>)=>(key:string):GeminiClient=>({models:{generateContent:params=>handler(key,params)}});
@@ -101,14 +101,14 @@ test('future injected RAG adapter can lead text, fall back technically and skip 
   await assert.rejects(ai.generate(input,local),{code:'safety_refusal'});
 });
 
-test('external privacy eligibility, redaction, concurrency bound, and explicit connection tests',async()=>{
+test('external availability, redaction, concurrency bound, and explicit connection tests',async()=>{
   let calls=0;
   const gemini=new GeminiProvider(config(),factory(async()=>{calls++;return ok;}));
   const ai=createAI(config(),gemini);
   assert.equal(ai.externalEnabled(),true);assert.equal(ai.capabilities().externalEnabled,true);
-  assert.equal((await ai.generate({...input,externalAllowed:false},local)).provider,'local');assert.equal(calls,0);
   assert.equal(ai.diagnostics().gemini.state,'not_tested');
-  await ai.testConnection();assert.equal(calls,1);assert.equal(ai.diagnostics().lastTest?.state,'verified');
+  assert.equal((await ai.generate(input,local)).provider,'gemini');assert.equal(calls,1);
+  await ai.testConnection();assert.equal(calls,2);assert.equal(ai.diagnostics().lastTest?.state,'verified');
   assert.doesNotMatch(redact('Sri Ani sri@example.test 081234567890 3273000000000001',['Sri Ani']),/Sri Ani|@|0812|3273/);
   let release!:()=>void;
   const slow=new GeminiProvider(config(),factory(async()=>{await new Promise<void>(r=>release=r);return ok;}));
@@ -127,7 +127,7 @@ test('timeout aborts the provider and the total deadline allows local recovery',
   assert.equal((await createAI(env,provider).generate(input,local)).provider,'local');
 });
 
-test('global AI switches still prevent external generation even when a caller consents',async()=>{
+test('global AI switches still prevent external generation without a consent gate',async()=>{
   for(const settings of [{AI_ENABLED:'false'},{AI_EXTERNAL_MODE:'off'}]) {
     const env=config(settings);let calls=0;
     const ai=createAI(env,new GeminiProvider(env,factory(async()=>{calls++;return ok;})));

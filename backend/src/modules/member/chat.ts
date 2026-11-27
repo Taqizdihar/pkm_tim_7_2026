@@ -64,7 +64,9 @@ export const messageInput=z.object({
   content:z.string().trim().max(4000).default(''),media_id:z.string().regex(/^[1-9][0-9]{0,19}$/).optional(),
   species:z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(120).optional(),
   intent:z.enum(['identify','condition','cause','grow','care']).default('condition'),
-  client_request_id:z.string().uuid(),external_consent:z.boolean().default(false),
+  client_request_id:z.string().uuid(),
+  // Preserve old request hashes on retry; this retired field no longer controls routing.
+  external_consent:z.boolean().default(false),
 }).strict().refine(value=>value.content.length>0||Boolean(value.media_id),'Tulis pertanyaan atau lampirkan foto.');
 export type MessageInput=z.infer<typeof messageInput>;
 
@@ -87,7 +89,7 @@ export async function generateTurn(pool:Pool,auth:MemberAuth,ai:AIService,root:s
     if(existing)await db.execute(`UPDATE chat_messages SET request_state='pending',lease_token=?,lease_expires_at=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL ? SECOND) WHERE id=?`,[lease,leaseSeconds,existing.id]);
     else await db.execute(`INSERT INTO chat_messages (conversation_id,role,content,media_asset_id,client_request_id,request_hash,request_state,lease_token,lease_expires_at,rag_metadata_json,created_at)
       VALUES (?,'user',?,?,?,?,'pending',?,DATE_ADD(UTC_TIMESTAMP(3),INTERVAL ? SECOND),?,UTC_TIMESTAMP(3))`,
-      [key,content,input.media_id||null,input.client_request_id,hash,lease,leaseSeconds,JSON.stringify({intent:input.intent,species:input.species,external_consent:input.external_consent})]);
+      [key,content,input.media_id||null,input.client_request_id,hash,lease,leaseSeconds,JSON.stringify({intent:input.intent,species:input.species})]);
     await db.execute('UPDATE chat_conversations SET updated_at=UTC_TIMESTAMP(3) WHERE id=? AND user_id=?',[key,user]);
     return {completed:false};
   });
@@ -97,19 +99,18 @@ export async function generateTurn(pool:Pool,auth:MemberAuth,ai:AIService,root:s
     const history=ai.maxContext ? await rows(pool,`SELECT role,content,rag_metadata_json FROM chat_messages WHERE conversation_id=? AND (client_request_id IS NULL OR client_request_id<>?)
       AND (role='assistant' OR request_state IS NULL OR request_state='completed') ORDER BY id DESC LIMIT ?`,[key,input.client_request_id,ai.maxContext]) : [];
     const personal=[member.name,String(member.email||''),String(member.phone_number||''),String(member.username||'')];
-    const context=history.reverse().filter(m=>json<Record<string,unknown>>(m.rag_metadata_json,{}).external_consent===true)
+    const context=history.reverse().filter(m=>['user','assistant'].includes(m.role)&&json<Record<string,unknown>>(m.rag_metadata_json,{}).refused!==true)
       .map(m=>({role:m.role as 'user'|'assistant',text:redact(String(m.content).slice(0,4000),personal)}));
     let species:string|undefined;
     if(input.species)species=(await rows(pool,"SELECT name FROM species WHERE slug=? AND status='published'",[input.species]))[0]?.name;
     const image=input.media_id ? await consultationImage(pool,root,user,input.media_id,key,true) : undefined;
-    const response=await ai.generate({question:redact(content,personal),context,species,intent:input.intent,image,
-      externalAllowed:ai.externalEnabled()&&input.external_consent},localProvider(()=>localReply(pool,content,input.species)));
+    const response=await ai.generate({question:redact(content,personal),context,species,intent:input.intent,image},localProvider(()=>localReply(pool,content,input.species)));
     await auth.mutate(user,token,async db=>{
       const c=await rows(db,'SELECT id FROM chat_conversations WHERE id=? AND user_id=? FOR UPDATE',[key,user]);
       if(!c.length)throw new HttpError(404,'Percakapan telah dihapus.');
       const current=(await rows(db,"SELECT id,lease_token,request_state FROM chat_messages WHERE conversation_id=? AND role='user' AND client_request_id=?",[key,input.client_request_id]))[0];
       if(!current||current.lease_token!==lease||current.request_state!=='pending')throw new HttpError(409,'Permintaan sedang dipulihkan. Muat ulang percakapan.','LEASE_CHANGED');
-      const metadata:ConsultationResponse & {external_consent:boolean}={...response,external_consent:input.external_consent};
+      const metadata:ConsultationResponse=response;
       await db.execute(`INSERT INTO chat_messages (conversation_id,role,content,client_request_id,rag_metadata_json,created_at) VALUES (?,'assistant',?,?,?,UTC_TIMESTAMP(3))`,[key,response.text,input.client_request_id,JSON.stringify(metadata)]);
       await db.execute("UPDATE chat_messages SET request_state='completed',lease_token=NULL,lease_expires_at=NULL WHERE id=?",[current.id]);
       await db.execute('UPDATE chat_conversations SET updated_at=UTC_TIMESTAMP(3) WHERE id=? AND user_id=?',[key,user]);

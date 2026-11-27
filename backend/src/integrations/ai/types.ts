@@ -6,7 +6,6 @@ export interface ConsultationRequest {
   species?: string;
   intent: Intent;
   image?: { data: Buffer; mimeType: 'image/webp' };
-  externalAllowed: boolean;
 }
 export interface ProviderResponse {
   text: string;

@@ -2,13 +2,15 @@
 
 Implementation date: 27 November 2026. Scope: consultation, photos, history, and the CMS AI diagnostics section. No multi-Pet, animation assets, weather, IoT, public registration, or recovery-channel integration was added.
 
-## Access update requested by the owner
+## Access and consent updates requested by the owner
 
-The owner subsequently requested that the `AI_DEMO_MEMBER_IDS` restriction be disabled completely. The account-ID check and environment field have been removed. A leftover value in an existing `.env` is ignored. External consultation is now available to all authenticated members when `AI_ENABLED=true`, `AI_EXTERNAL_MODE=demo`, and a provider is configured. Per-turn text/photo consent, ownership, session/CSRF checks, private storage, redaction, limits and fallback continue to apply. CMS diagnostics describe access for all signed-in members instead of counting demo IDs. This supersedes the original prompt's test-account allowlist requirement; it does not disable Gemini itself.
+The owner requested removal of both the `AI_DEMO_MEMBER_IDS` restriction and the per-turn consent requirement for the presentation. The account-ID check and environment field have been removed; a leftover value in an existing `.env` is ignored. Authenticated members now submit text and photos directly when `AI_ENABLED=true`, `AI_EXTERNAL_MODE=demo`, and a provider is configured. Consent checkboxes and the external-processing details panel are gone. AI labels, actual provider attribution, ownership, session/CSRF checks, private storage, redaction, limits and fallback continue to apply. CMS diagnostics describe access for all signed-in members. These instructions supersede the original prompt's allowlist and consent requirements.
 
-Verification for this access update: backend type checking, all 45 backend tests, backend build, frontend type checking/build, and both targeted Chrome cases (`ai-diagnostics.spec.ts`, `member-chat.spec.ts`) passed. New regressions cover capabilities for two member IDs even with a leftover restrictive setting, and global AI disable despite consent. A safe check of the owner's existing configuration reports external processing enabled and a provider configured, with no claim of a verified connection. No live provider request or developer database write was made for this update.
+The earlier access-only update passed all 45 backend tests, type checks/builds, and two targeted Chrome cases. The subsequent consent removal passed all 46 backend tests, 20 frontend unit tests, both type checks/builds, and 15 targeted Chrome scenarios covering direct text/photo submission, local fallback/retry, history, CMS and responsive resizing. No live provider request or developer database write was made for these updates.
 
-Scoped quality gate PASS: the changed CMS access text follows the existing typography and layout; Chrome checked it at 320/768/1440 px without horizontal overflow, and the 1440 px screenshot was visually inspected. Authentication/consent and the existing native controls remain functional in the targeted tests. No assets, colors, motion, or unrelated member layouts changed.
+The retired `external_consent` input field remains accepted solely for matching hashes of older pending requests. Both old true/false values are ignored for provider selection; new clients omit the field and new user/assistant metadata does not record consent. The backend includes bounded completed text from the owned conversation without a consent-flag filter, excludes refused assistant responses, redacts known identifiers, and never resends historical image bytes. Global AI disable still prevents external requests.
+
+Scoped quality gate PASS: the existing typography, colors, motion, native labels, keyboard behavior and responsive measurements are preserved. Chrome verifies the checkbox-free chat at ten phone/tablet/desktop sizes and CMS at 320/768/1440 px without overflow. Current narrow-chat and photo-submit screenshots were visually inspected. No assets or unrelated member layouts changed.
 
 ## Implementation report
 
@@ -18,8 +20,8 @@ Scoped quality gate PASS: the changed CMS access text follows the existing typog
 | Dependencies | SDK installed only in `backend/`; no frontend AI SDK, Markdown dependency, or new visual assets. Existing Sharp handles image validation. |
 | Model | Environment-controlled `GEMINI_MODEL`, default `gemini-3.5-flash-lite`. Official model/pricing documents were reviewed; actual project access is unverified without a key. No automatic paid model/billing switch. |
 | Text consultation | Indonesian agricultural instructions distinguish observations from possible causes, request more evidence when needed, and prohibit administrative side effects or unsupported dosage claims. |
-| Photo consultation | Camera/gallery, preview/replace/remove, five intents, optional description and species including “Belum tahu jenisnya”, per-photo confirmation, private upload, actual processed WebP bytes in the request, actual image-analysis metadata on success. |
-| Multi-turn context | Bounded recent MySQL text from the owned conversation, allowed roles, consented context only, no historical photo retransmission or client-forged assistant messages. |
+| Photo consultation | Camera/gallery, preview/replace/remove, five intents, optional description and species including “Belum tahu jenisnya”, direct submission, private upload, actual processed WebP bytes in the request, actual image-analysis metadata on success. |
+| Multi-turn context | Bounded completed MySQL text from the owned conversation, allowed roles, refused assistant responses excluded, no historical photo retransmission or client-forged assistant messages. |
 | Router/fallback | Gemini primary key → eligible backup key → local guide. Primary/fallback providers are configurable. Missing configuration, network, timeout, invalid response, 5xx, unsupported modality, and quota states have normalized fallback handling. |
 | Future RAG | Injectable provider contract/capability boundary, tested with a fake adapter as primary. Reserved RAG variables do not trigger HTTP; real RAG remains deferred. |
 | MySQL | Existing conversation/message/media tables, ordered user and assistant records, actual metadata in `rag_metadata_json`, null legacy metadata handled. History remains server-backed. |
@@ -29,7 +31,7 @@ Scoped quality gate PASS: the changed CMS access text follows the existing typog
 | Responsive layout | Existing measured navigation/composer and virtual-viewport behavior retained. Ten additional AI viewport cases cover empty and long multiline conversation states; existing larger-text and resize regressions also run. |
 | History | Existing search/date groups/open/delete/load-more retained, dates normalized on save/open, load-more moved after the list, and search scope described honestly. No empty record just from pressing New. |
 | CMS | Authenticated safe provider/key-slot/model/demo/local status and manual quota-consuming test. GET does not call Gemini. Real test result/latency is held in process memory. No secret editor. |
-| Automated checks | Frontend: type checking, 20 unit tests and production build passed. Backend: type checking, 43 mock/HTTP/unit tests and build passed. Final browser results are recorded below. |
+| Automated checks | Current consent-removal checks: 46 backend tests, 20 frontend unit tests, 15 targeted Chrome scenarios, type checks and both production builds passed. Initial integration results are preserved below. |
 | Live provider | **Not verified by these automated checks.** Both keys were absent at initial implementation and were subsequently configured by the owner. No live result is fabricated. |
 | Configuration | Add the two keys to `backend/.env`, choose an accessible multimodal model, enable external AI, restart backend, then explicitly test in CMS. No member-ID list is needed. |
 | Manual SQL | **Required and not executed:** apply `docs/database/05_ai_consultation.sql` once in phpMyAdmin after 04. No table, seed, account, credential, or existing record was changed during implementation. |
@@ -48,17 +50,17 @@ AI_ENABLED=true
 AI_EXTERNAL_MODE=demo
 ```
 
-All signed-in members can confirm external processing; the retired `AI_DEMO_MEMBER_IDS` setting is ignored. `AI_ENABLED=false` or `AI_EXTERNAL_MODE=off` still disables external calls globally. See [`../backend/.env.example`](../backend/.env.example) for all validated defaults, including provider priority, context/output caps, timeouts and concurrency.
+All signed-in members submit directly without a consent checkbox; the retired `AI_DEMO_MEMBER_IDS` setting is ignored. `AI_ENABLED=false` or `AI_EXTERNAL_MODE=off` still disables external calls globally. See [`../backend/.env.example`](../backend/.env.example) for all validated defaults, including provider priority, context/output caps, timeouts and concurrency.
 
 The primary key is tried first. Invalid primary credentials are disabled until restart and eligible transient errors can use the backup once. Model misconfiguration blocks Gemini until restart. Safety refusals never trigger a backup/provider bypass. A quota response cools down Gemini rather than rotating keys; Google applies quota per project, not per key. A second key from the same project does not increase quota. An exhausted daily quota is not repeatedly retried. Failover uses the same configured model and never enables billing.
 
 ## Test evidence and practical bounds
 
-Backend `ai.test.ts` exercises SDK inputs (model, roles, bytes/MIME, limits), text/image results, invalid credentials, 5xx, empty response, missing keys, timeout/abort, RetryInfo parsing, quota cooldown, safety refusal, fake RAG routing, privacy eligibility, redaction and concurrency. `ai-http.test.ts` checks existing authorization boundaries, safe diagnostics, no automatic provider call, manual-test limits and member rate limits. `chat-turn.test.ts` uses isolated SQL fixtures and temporary non-sensitive generated pixels for ownership/media, actual metadata, ordered history, duplicate/hash conflicts, simultaneous submissions, stale/failed recovery, deletion and session revocation during generation, and the absence of an open transaction during external calls. Existing auth/CMS/catalog/care regressions are retained.
+Backend `ai.test.ts` exercises SDK inputs (model, roles, bytes/MIME, limits), text/image results, invalid credentials, 5xx, empty response, missing keys, timeout/abort, RetryInfo parsing, quota cooldown, safety refusal, fake RAG routing, global AI switches, redaction and concurrency. `ai-http.test.ts` checks existing authorization boundaries, safe diagnostics, no automatic provider call, manual-test limits and member rate limits. `chat-turn.test.ts` uses isolated SQL fixtures and temporary non-sensitive generated pixels for ownership/media, actual metadata, ordered history without consent flags, duplicate/hash conflicts, simultaneous submissions, stale/failed recovery including legacy consent values, deletion and session revocation during generation, and the absence of an open transaction during external calls. Existing auth/CMS/catalog/care regressions are retained.
 
 These persistence tests simulate the SQL boundary; they are **not** a destructive integration run against the developer's `dewi_sri` database. SQL 05 and real database end-to-end behavior remain manual verification steps. The schema is additive and uses existing MySQL 8-compatible columns/indexes. The application never applies it at startup.
 
-Final check results:
+Original integration check results (before the subsequent access/consent changes):
 
 | Command/check | Result |
 | --- | --- |
@@ -71,9 +73,9 @@ Final check results:
 
 Run browser checks on Windows with `$env:PLAYWRIGHT_CHANNEL='chrome'` followed by `npm run test:browser`. The default Playwright channel is still Edge unless overridden. No physical-device or unrestricted production verification is claimed.
 
-Chrome tests in `ai-consultation.spec.ts` cover 320×568, 341×760, 360×800, 390×844, 430×932, 768×1024, 1024×768, 1366×768, 1440×900 and 1920×1080. They exercise compact empty state, multiline questions, long assistant text, safe text-only Markdown, latest-answer reachability above the composer, honest local attribution, same-ID retry, photo confirmation with unknown species, image preview, search and reopened history. JavaScript errors and horizontal overflow are checked. Other responsive tests cover larger text, growing input, in-place DevTools resizing and simulated visual viewport keyboard changes. These are Chrome simulations rather than actual Samsung/iPhone/Pixel devices or iOS Safari.
+Chrome tests in `ai-consultation.spec.ts` cover 320×568, 341×760, 360×800, 390×844, 430×932, 768×1024, 1024×768, 1366×768, 1440×900 and 1920×1080. They exercise compact empty state, multiline questions, long assistant text, safe text-only Markdown, latest-answer reachability above the composer, honest local attribution, same-ID retry, direct photo submission with unknown species, image preview, search and reopened history. They assert no checkbox is present and new text/photo payloads omit `external_consent`. JavaScript errors and horizontal overflow are checked. Other responsive tests cover larger text, growing input, in-place DevTools resizing and simulated visual viewport keyboard changes. These are Chrome simulations rather than actual Samsung/iPhone/Pixel devices or iOS Safari.
 
-Screenshots live under ignored `.artifacts/tanya-tani-review/`: empty and answer states at 341/768/1440, photo preview/consent at 360, and CMS diagnostics at 1440. A full-page capture initially placed fixed navigation in the middle of the artifact; the photo review now uses two viewport captures at the preview and consent/submit positions. Representative images are visually inspected in addition to assertions.
+Screenshots live under ignored `.artifacts/tanya-tani-review/`: empty and answer states at 341/768/1440, photo preview/submit at 360, and CMS diagnostics at 1440. A full-page capture initially placed fixed navigation in the middle of the artifact; the photo review now uses two viewport captures at the preview and submit positions. Representative images are visually inspected in addition to assertions.
 
 Two timing-sensitive browser assertions were corrected: local attribution is scoped to the assistant reply rather than a transient header status during capability loading; the bottom-sheet test records the actual native animation call rather than assuming the 280 ms entrance is still running after browser automation returns. Product animation timing is unchanged.
 
@@ -82,7 +84,7 @@ Two timing-sensitive browser assertions were corrected: local attribution is sco
 The project application requirements in `AGENTS.md` govern this review; landing-page hero, marketing statistics, and decorative asset requirements do not replace the member consultation workflow.
 
 - R-03 / C-4 PASS: Chrome cases cover the ten requested AI viewports, multiline/long replies and scroll reachability; existing tests cover large text, keyboard viewport signals and responsive resizing. Empty 341 px, long answer 341 px, photo form 360 px, and CMS diagnostics 1440 px artifacts were inspected visually.
-- R-24 / R-26 / R-32 / R-39 PASS: native buttons/fields retain visible labels or accessible names; browser flows exercise send, same-ID retry, gallery, unknown species, confirmation, photo preview/Escape, history search/open/delete and CMS testing. Header targets are at least 44 px; send/attach targets are 48 px wide. Existing focus and reduced-motion dialog checks remain active.
+- R-24 / R-26 / R-32 / R-39 PASS: native buttons/fields retain visible labels or accessible names; browser flows exercise send, same-ID retry, gallery, unknown species, photo preview/Escape, history search/open/delete and CMS testing. Header targets are at least 44 px; send/attach targets are 48 px wide. Existing focus and reduced-motion dialog checks remain active.
 - R-25 PASS: the composer placeholder retains `#506458` on `#fafcf6` (6.15:1 WCAG relative-luminance ratio); new text uses the existing dark ink/muted palette on the existing ivory/white surfaces.
 - R-17 / R-18 / R-23 / R-36 / R-38 / C-5 PASS: no asset generation, marketing claims, fabricated sources, live verification claims, or test member data was added to the shipped application. Test API/model results are explicitly fixtures in tests and this report.
 - R-27 / R-35 PASS: empty, upload/preparation, waiting, fallback, failed/retry and diagnostics states are functional; frontend/backend builds and the recorded automated checks validate behavior. Live Gemini and MySQL migration remain explicitly unverified/manual.
@@ -92,9 +94,9 @@ The project application requirements in `AGENTS.md` govern this review; landing-
 
 ## Privacy and deployment boundaries
 
-The backend checks the global AI switches and explicit per-turn consent before any external provider request, and the member API requires an authenticated session. The owner removed the account-ID restriction. No member ID, account/profile row, session, email/phone columns, unrelated thread, or photo filename is added to provider payloads. Text redaction removes common identifiers and known account identity values but cannot prove arbitrary content is safe. Photo confirmation is essential; the app has no claim of automatic face/document detection. Unconfirmed requests still use local guidance.
+The backend checks the global AI switches, and the member API requires an authenticated session. The owner removed both the account-ID restriction and per-turn consent. No member ID, account/profile row, session, email/phone columns, unrelated thread, or photo filename is added to provider payloads. Text redaction removes common identifiers and known account identity values but cannot prove arbitrary content is safe. The app has no claim of automatic face/document detection. Local guidance is used when AI is disabled, unconfigured or encounters an eligible failure.
 
-Google's unpaid terms and the existing processing notices continue to apply. The access change removes the member-ID restriction without enabling billing or claiming production readiness. The external mode labels remain `off` and `demo`; they now control whether authenticated members can opt in rather than identifying a test-account list.
+Google's unpaid terms continue to apply. The requested access and consent changes do not enable billing or claim production readiness. AI labels and accurate response attribution identify the feature; external mode labels remain `off` and `demo` and control external processing globally.
 
 Uploaded files remain private after deletion; the ownership/reference query no longer authorizes photos whose only conversation was deleted. Files are retained for reviewed orphan cleanup, avoiding accidental deletion of avatars/shared assets. The browser now prepares at up to 1600 px instead of 720 px and the server keeps its 1600 px cap; fine-detail diagnostic accuracy is not claimed or clinically measured.
 
@@ -106,10 +108,10 @@ If the process crashes, a pending turn can be reclaimed after its lease (total t
 - Obtain keys in Google AI Studio and put them only in `backend/.env`; verify the project/model quota and billing settings.
 - Use `AI_ENABLED=true` and `AI_EXTERNAL_MODE=demo`, then restart backend. No member IDs need configuration.
 - Run **Pengaturan → Integrasi AI → Uji Koneksi AI** explicitly; this consumes quota and verifies text only.
-- Use a signed-in member to consent to a non-sensitive agricultural question and contextual follow-up.
-- Review/confirm a prepared photo, identify an unknown plant, and inspect actual image-aware reply/metadata.
+- Use a signed-in member to submit a non-sensitive agricultural question and contextual follow-up directly.
+- Preview and send a prepared photo, identify an unknown plant, and inspect actual image-aware reply/metadata.
 - Refresh/logout/login/restart backend and reopen history; verify text, photos and metadata from MySQL.
-- Verify another signed-in member can also opt in, unconfirmed requests stay local, and fallback never claims image analysis.
+- Verify another signed-in member can also submit directly, global AI disable stays local, and fallback never claims image analysis.
 - Check a deliberately invalid primary key with the valid backup; do not rotate keys around project quota or safety restrictions.
 
 ## Sources reviewed

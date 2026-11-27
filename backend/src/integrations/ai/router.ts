@@ -15,7 +15,7 @@ export function createAI(config?: Env, geminiOverride?: GeminiProvider, rag?: Co
     let reason: string | undefined;
     for (const id of providerOrder()) {
       const provider = id === 'gemini' ? gemini : id === 'rag' ? (config?.RAG_ENABLED ? rag : undefined) : local;
-      if (id !== 'local' && (!externalEnabled() || !request.externalAllowed)) { reason = externalEnabled() ? 'privacy' : 'disabled'; continue; }
+      if (id !== 'local' && !externalEnabled()) { reason = 'disabled'; continue; }
       if (id === 'local' && config?.AI_LOCAL_FALLBACK_ENABLED === false) continue;
       if (!provider?.configured) { reason = 'not_configured'; continue; }
       if (id !== 'local' && request.image && !provider.capabilities.imageUnderstanding) { reason = 'unsupported_modality'; continue; }
@@ -42,7 +42,7 @@ export function createAI(config?: Env, geminiOverride?: GeminiProvider, rag?: Co
     const available = externalEnabled() && (geminiUsable||ragUsable);
     return { text: available || config?.AI_LOCAL_FALLBACK_ENABLED !== false, imageAnalysis: available && (geminiUsable || ragUsable&&Boolean(rag?.capabilities.imageUnderstanding)),
       externalEnabled: available, mode: available ? 'external_demo' : 'local', localFallback: config?.AI_LOCAL_FALLBACK_ENABLED !== false,
-      connectionVerified: Boolean(status?.lastSuccess), privacyNotice: 'Teks dan foto contoh dapat diproses layanan AI eksternal. Jangan kirim identitas, wajah, nomor HP, alamat, dokumen rahasia, atau data pribadi. Penyaringan otomatis tidak menjamin semua data pribadi terhapus.' };
+      connectionVerified: Boolean(status?.lastSuccess) };
   }
   return {
     generate, capabilities, externalEnabled,
@@ -58,7 +58,7 @@ export function createAI(config?: Env, geminiOverride?: GeminiProvider, rag?: Co
         if (concurrent >= config.AI_MAX_CONCURRENT_REQUESTS) throw new ProviderError('busy');
         concurrent++;
         try {
-          const result = await bounded(signal => gemini.generate({ question: 'Sebutkan satu langkah aman menjaga drainase media tanam sorgum.', intent: 'care', context: [], externalAllowed: true }, signal), new AbortController().signal, config.AI_TOTAL_TIMEOUT_MS);
+          const result = await bounded(signal => gemini.generate({ question: 'Sebutkan satu langkah aman menjaga drainase media tanam sorgum.', intent: 'care', context: [] }, signal), new AbortController().signal, config.AI_TOTAL_TIMEOUT_MS);
           lastTest = { state: result.refused ? 'safety_refusal' : 'verified', at: new Date().toISOString(), latencyMs: Date.now() - start, model: result.model };
         } finally { concurrent--; }
       } catch (error) { lastTest = { state: normalizeError(error).code, at: new Date().toISOString(), latencyMs: Date.now() - start }; }

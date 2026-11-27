@@ -8,14 +8,14 @@ Administrator tetap dibuat melalui CLI dan masuk di `/admin/login`. Cookie HttpO
 
 Pengelola mengisi identitas dan kata sandi awal sedikitnya 6 karakter, lalu menyampaikannya secara pribadi. Akun baru langsung aktif tanpa pilihan status pada formulir pembuatan, dan secara default wajib mengganti kata sandi pada `/change-password`. Untuk anggota yang lupa kata sandi, gunakan **Atur Ulang Kata Sandi** di CMS; semua sesi lama dicabut. Belum ada pemulihan WhatsApp, SMS, atau email. Kata sandi anggota mendukung frasa 6–200 karakter tanpa aturan komposisi dan tanpa pemotongan atau pengubahan spasi.
 
-Profil, preferensi, pilihan jenis dan progres Pet, jadwal, jurnal, hadiah harian, serta percakapan disimpan di MySQL. React menyimpan salinan di memori setelah pemeriksaan sesi. Server menentukan efek perawatan, tanggal Asia/Jakarta, poin, dan kepemilikan setiap rekaman. Foto pribadi disimpan di direktori privat server dan hanya tersedia lewat endpoint anggota yang memeriksa pemiliknya. Tanya Tani mendukung Gemini untuk teks, konteks percakapan, dan foto, dengan panduan lokal sebagai fallback. Semua anggota yang masuk dapat memakai pemrosesan eksternal saat AI diaktifkan, dengan persetujuan per permintaan.
+Profil, preferensi, pilihan jenis dan progres Pet, jadwal, jurnal, hadiah harian, serta percakapan disimpan di MySQL. React menyimpan salinan di memori setelah pemeriksaan sesi. Server menentukan efek perawatan, tanggal Asia/Jakarta, poin, dan kepemilikan setiap rekaman. Foto pribadi disimpan di direktori privat server dan hanya tersedia lewat endpoint anggota yang memeriksa pemiliknya. Tanya Tani mendukung Gemini untuk teks, konteks percakapan, dan foto, dengan panduan lokal sebagai fallback. Semua anggota yang masuk dapat langsung mengirim pertanyaan dan foto saat AI diaktifkan; label AI dan asal jawaban menjelaskan layanan yang dipakai.
 
 ### Mengaktifkan Gemini untuk demonstrasi
 
 1. Terapkan **sekali secara manual** [`05_ai_consultation.sql`](docs/database/05_ai_consultation.sql) melalui phpMyAdmin pada database yang sudah memiliki skrip 04. Skrip 05 hanya menambah kolom/index deduplikasi; jumlah tabel tetap 21. Tidak dijalankan otomatis dan belum diterapkan oleh perubahan kode ini.
 2. Simpan kedua kunci hanya di **`backend/.env`**: `GEMINI_API_KEY` untuk utama dan `GEMINI_API_KEY_FALLBACK` untuk cadangan. Contoh aman ada di [`backend/.env.example`](backend/.env.example). Pertahankan konfigurasi database lokal Anda.
 3. Isi `GEMINI_MODEL=gemini-3.5-flash-lite`, `AI_ENABLED=true`, dan `AI_EXTERNAL_MODE=demo`. Pembatasan ID akun demo telah dinonaktifkan atas permintaan pemilik; `AI_DEMO_MEMBER_IDS` tidak lagi dipakai. Kunci/model belum membuktikan koneksi berhasil.
-4. Mulai ulang backend, buka CMS **Pengaturan → Integrasi AI → Uji Koneksi AI** untuk uji teks nyata yang mengonsumsi kuota, lalu masuk sebagai anggota dan konfirmasikan pemrosesan eksternal sebelum mengirim pertanyaan atau foto contoh. Kunci tidak pernah memakai awalan `VITE_`, masuk browser, atau disimpan di pengaturan CMS.
+4. Mulai ulang backend, buka CMS **Pengaturan → Integrasi AI → Uji Koneksi AI** untuk uji teks nyata yang mengonsumsi kuota, lalu masuk sebagai anggota dan kirim pertanyaan atau foto contoh. Tidak ada checkbox persetujuan atau pembatasan ID anggota. Kunci tidak pernah memakai awalan `VITE_`, masuk browser, atau disimpan di pengaturan CMS.
 
 Routing saat ini: Gemini utama → kunci Gemini cadangan untuk kegagalan teknis yang sesuai → panduan lokal. Kunci dalam satu proyek berbagi kuota; aplikasi tidak merotasi kunci untuk mengulang kuota habis atau penolakan keamanan. Batas adapter memungkinkan RAG → Gemini → lokal setelah kontrak RAG tersedia; URL RAG saja tidak mengaktifkan layanan. Foto tervalidasi dikirim sebagai byte WebP inline, tidak sebagai URL privat. Metadata provider/model dan riwayat tetap di MySQL.
 
@@ -80,7 +80,7 @@ Progres dan jadwal disimpan pada rekaman budidaya per akun dan spesies. Pemiliha
 
 ## Batas frontend dan titik integrasi
 
-- Kamera/galeri mendukung pratinjau, jenis yang belum diketahui, tujuan konsultasi, dan persetujuan pemrosesan eksternal. Gemini menerima gambar sebenarnya jika diizinkan; fallback lokal dengan jelas menyatakan foto tidak dianalisis.
+- Kamera/galeri mendukung pratinjau, jenis yang belum diketahui, tujuan konsultasi, dan pengiriman langsung. Gemini menerima gambar sebenarnya saat layanan tersedia; fallback lokal dengan jelas menyatakan foto tidak dianalisis.
 - Jawaban lokal terpisah di `localGuide.ts`, sehingga penyedia jawaban backend dapat disambungkan melalui lapisan ini dan state konsultasi tanpa mengganti tampilan.
 - Panel cuaca menampilkan status belum terhubung. Lokasi profil sudah tersedia sebagai masukan layanan cuaca kelak.
 - Jadwal berulang setiap hari. Tanda pengingat hanya tampil di beranda saat aplikasi dibuka dan diaktifkan; belum ada push notification.

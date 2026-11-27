@@ -16,7 +16,7 @@ export async function memberFixture(page:Page,authenticated=true) {
     if(p==='/auth/change-password'){restricted=false;csrf='rotated';return send(session());}
     if(restricted)return send(null,403);
     const data=get();
-    if(p==='/member/chat/capabilities')return send({externalEnabled:false,imageAnalysis:false,connectionVerified:false,localFallback:true,privacyNotice:''});
+    if(p==='/member/chat/capabilities')return send({externalEnabled:false,imageAnalysis:false,connectionVerified:false,localFallback:true});
     if(p==='/member/bootstrap')return send(data);
     if(p==='/member/preferences'){Object.assign(data.profile,b);return send(data.profile);}
     if(p==='/member/profile'){Object.assign(data.profile,b);return send(data.profile);}

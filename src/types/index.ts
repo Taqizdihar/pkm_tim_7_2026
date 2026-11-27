@@ -63,7 +63,7 @@ export interface ChatMessage {
   photoName?: string;
   diagnosis?: DiagnosisDetails;
   providerMetadata?: { provider: 'gemini' | 'rag' | 'local'; model?: string; imageAnalyzed: boolean; fallbackUsed: boolean; fallbackReason?: string; refused?: boolean; latencyMs?: number };
-  request?: { client_request_id: string; state: 'pending' | 'failed' | 'completed'; media_id?: string; species?: string; intent: 'identify' | 'condition' | 'cause' | 'grow' | 'care'; external_consent: boolean };
+  request?: { client_request_id: string; state: 'pending' | 'failed' | 'completed'; media_id?: string; species?: string; intent: 'identify' | 'condition' | 'cause' | 'grow' | 'care'; external_consent?: boolean };
 }
 
 export interface ChatConversation {

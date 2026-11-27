@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {randomUUID} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {mkdtemp,writeFile,mkdir,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
@@ -54,10 +54,12 @@ function store(){
 test('turn persistence is ordered, metadata is actual, duplicate IDs deduplicate and changed payloads conflict',async()=>{
   const db=store();let calls=0;const seen:any[]=[];
   const ai=createAI(env(),new GeminiProvider(env(),()=>({models:{generateContent:async request=>{db.assertOutside();calls++;seen.push(request);return {text:'Periksa tanah.',modelVersion:'fixture-model'} as any;}}})));
-  const b=messageInput.parse({content:'Mengapa daun kuning?',client_request_id:randomUUID(),external_consent:true});
+  const b=messageInput.parse({content:'Mengapa daun kuning?',client_request_id:randomUUID()});
   const turn=(body=b)=>generateTurn(db.pool,db.auth,ai,'unused',member,'token','1',body);
   await turn();await turn();assert.equal(calls,1);assert.equal(db.messages.length,2);
   assert.equal(db.messages[0].request_state,'completed');assert.equal(JSON.parse(db.messages[1].rag_metadata_json).provider,'gemini');
+  assert.equal('external_consent' in JSON.parse(db.messages[0].rag_metadata_json),false);
+  assert.equal('external_consent' in JSON.parse(db.messages[1].rag_metadata_json),false);
   const saved=await conversation(db.pool,'7','1');assert.equal(saved.messages[1].providerMetadata?.model,'fixture-model');
   await assert.rejects(turn({...b,content:'Different'}),{code:'REQUEST_CONFLICT'});
   await turn({...b,content:'Daun bawah, baru dua hari.',client_request_id:randomUUID()});
@@ -70,7 +72,7 @@ test('turn persistence is ordered, metadata is actual, duplicate IDs deduplicate
 test('simultaneous sends do not overlap; failed and stale turns recover with the original identity',async()=>{
   const db=store();let release!:()=>void,calls=0;
   const provider=new GeminiProvider(env(),()=>({models:{generateContent:async()=>{calls++;await new Promise<void>(r=>release=r);return {text:'Jawaban'} as any;}}}));
-  const ai=createAI(env(),provider),b=messageInput.parse({content:'Sorgum',client_request_id:randomUUID(),external_consent:true});
+  const ai=createAI(env(),provider),b=messageInput.parse({content:'Sorgum',client_request_id:randomUUID()});
   const turn=(body=b)=>generateTurn(db.pool,db.auth,ai,'unused',member,'token','1',body);
   const first=turn();await new Promise(r=>setTimeout(r,5));
   await assert.rejects(turn(),{code:'CHAT_PENDING'});
@@ -89,19 +91,35 @@ test('simultaneous sends do not overlap; failed and stale turns recover with the
 for(const interruption of ['delete','revoke'])test(`a conversation ${interruption} during generation cannot save or return a private answer`,async()=>{
   const db=store();let release!:()=>void;
   const ai=createAI(env(),new GeminiProvider(env(),()=>({models:{generateContent:async()=>{await new Promise<void>(r=>release=r);return {text:'Private reply'} as any;}}})));
-  const body=messageInput.parse({content:'Sorgum',client_request_id:randomUUID(),external_consent:true});
+  const body=messageInput.parse({content:'Sorgum',client_request_id:randomUUID()});
   const result=generateTurn(db.pool,db.auth,ai,'unused',member,'token','1',body);
   await new Promise(r=>setTimeout(r,5));interruption==='delete'?db.deleted():db.revoke();release();
   await assert.rejects(result,{status:interruption==='delete'?404:401});assert.equal(db.messages.filter(m=>m.role==='assistant').length,0);
 });
 
-test('privacy denial uses local guidance and does not send profile fields, previous unconsented text, or foreign media',async()=>{
+test('global disable uses local guidance and foreign media remain inaccessible',async()=>{
   const db=store();let calls=0;
-  const ai=createAI(env(),new GeminiProvider(env(),()=>({models:{generateContent:async()=>{calls++;return {text:'Answer'} as any;}}})));
+  const disabled=env({AI_ENABLED:'false'});
+  const ai=createAI(disabled,new GeminiProvider(disabled,()=>({models:{generateContent:async()=>{calls++;return {text:'Answer'} as any;}}})));
   const b=messageInput.parse({content:'Cara menanam sorgum',client_request_id:randomUUID()});
   await generateTurn(db.pool,db.auth,ai,'unused',member,'token','1',b);assert.equal(calls,0);
   const saved=await conversation(db.pool,'7','1');assert.equal(saved.messages[1].providerMetadata?.provider,'local');
   await assert.rejects(generateTurn(db.pool,db.auth,ai,'unused',member,'token','2',{...b,client_request_id:randomUUID(),media_id:'999'}),{status:404});
+});
+
+test('legacy pending turns retain their request hashes and retry through AI regardless of the retired consent value',async()=>{
+  for(const value of [false,true]) {
+    const db=store();let calls=0;
+    const ai=createAI(env(),new GeminiProvider(env(),()=>({models:{generateContent:async()=>{calls++;return {text:'Periksa drainase.'} as any;}}})));
+    const body=messageInput.parse({content:'Cara merawat sorgum?',client_request_id:randomUUID(),external_consent:value});
+    const hash=createHash('sha256').update(JSON.stringify({...body,content:body.content})).digest('hex');
+    db.messages.push({id:'1',role:'user',content:body.content,client_request_id:body.client_request_id,request_hash:hash,request_state:'failed',lease_token:null,created_at:new Date(),rag_metadata_json:JSON.stringify({intent:body.intent,external_consent:value})});
+    const saved=await conversation(db.pool,'7','1');
+    assert.equal(saved.messages[0].request?.external_consent,value);
+    const {state:_state,...request}=saved.messages[0].request!;
+    await generateTurn(db.pool,db.auth,ai,'unused',member,'token','1',messageInput.parse({...request,content:body.content}));
+    assert.equal(calls,1);assert.equal(db.messages.length,2);assert.equal(JSON.parse(db.messages[1].rag_metadata_json).provider,'gemini');
+  }
 });
 
 test('authorized media loads processed bytes, rejects foreign/avatar/traversal assets and invalid contents',async()=>{

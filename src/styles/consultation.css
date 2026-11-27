@@ -807,12 +807,8 @@
 .consultation-answer h3 { margin: 14px 0 7px; font-size: 1rem; color: #174a32; }
 .consultation-attribution { display: grid; gap: 4px; margin-top: 14px; color: var(--consultation-muted); font-size: .8rem; }
 .consultation-attribution p { margin: 0; font-size: inherit; }
-.consultation-attribution summary, .consultation-privacy summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; text-decoration: underline; text-underline-offset: 3px; }
-.consultation-attribution summary:focus-visible, .consultation-privacy summary:focus-visible { outline: 3px solid #006a3e; outline-offset: 2px; }
-.consultation-privacy { color: var(--consultation-muted); font-size: .875rem; }
-.consultation-privacy p { margin: 4px 0 10px; }
-.consultation-privacy label, .consultation-photo-note label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; min-height: 44px; }
-.consultation-privacy input, .consultation-photo-note input { width: 20px; height: 20px; flex: none; margin-top: 3px; accent-color: #006a3e; }
+.consultation-attribution summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; text-decoration: underline; text-underline-offset: 3px; }
+.consultation-attribution summary:focus-visible { outline: 3px solid #006a3e; outline-offset: 2px; }
 .consultation-photo-preview { display: block; width: 100%; border: 0; border-radius: 12px; padding: 0; }
 .consultation-photo-preview:focus-visible { outline: 3px solid #006a3e; outline-offset: 3px; }
 .consultation-expanded-photo { display: block; width: 100%; height: auto; max-height: 70dvh; object-fit: contain; }

@@ -41,8 +41,8 @@ const TOPICS = [
   { label: 'Kolam ikan', prompt: 'Bagaimana menjaga kualitas air kolam ikan?' },
   { label: 'Ayam petelur', prompt: 'Bagaimana merawat ayam petelur dan kandangnya?' },
 ];
-type TurnPayload = {content:string;client_request_id:string;intent: 'identify'|'condition'|'cause'|'grow'|'care';species?:string;media_id?:string;external_consent:boolean};
-interface Capabilities {externalEnabled:boolean;imageAnalysis:boolean;connectionVerified:boolean;privacyNotice:string;localFallback:boolean}
+type TurnPayload = {content:string;client_request_id:string;intent: 'identify'|'condition'|'cause'|'grow'|'care';species?:string;media_id?:string;external_consent?:boolean};
+interface Capabilities {externalEnabled:boolean;imageAnalysis:boolean;connectionVerified:boolean;localFallback:boolean}
 const INTENTS=[{value:'identify',label:'Identifikasi tanaman atau hewan'},{value:'condition',label:'Periksa kondisi budidaya'},{value:'cause',label:'Cari penyebab masalah'},{value:'grow',label:'Pelajari cara budidaya'},{value:'care',label:'Perawatan harian'}] as const;
 
 function compressPhoto(file: File): Promise<string> {
@@ -119,8 +119,6 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
   const [requestError, setRequestError] = useState('');
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [capabilities,setCapabilities]=useState<Capabilities|null>(null);
-  const [externalConsent,setExternalConsent]=useState(false);
-  const [photoConsent,setPhotoConsent]=useState(false);
   const [stage,setStage]=useState('');
   const [preview,setPreview]=useState<string|null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -262,7 +260,7 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
   async function sendMessage(question = input) {
     const text = question.trim();
     if (!text || isSending || sendingRef.current || pending.current) return;
-    const payload:TurnPayload={content:text,client_request_id:crypto.randomUUID(),intent:'condition',external_consent:externalConsent&&Boolean(capabilities?.externalEnabled)};
+    const payload:TurnPayload={content:text,client_request_id:crypto.randomUUID(),intent:'condition'};
     await submitTurn(payload);
   }
 
@@ -278,7 +276,7 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
     try {
       if(photo&&!payload.media_id){setStage('Mengunggah foto...');const media=await uploadDataImage(photo.url,'/member/chat/media');payload.media_id=media.id;}
       if(!savedKey.current)savedKey.current=(await memberApi('/member/chat/conversations','POST',{title:(payload.content||'Konsultasi foto').slice(0,160),client_request_id:payload.client_request_id})).id;
-      setStage(payload.media_id&&payload.external_consent&&capabilities?.imageAnalysis?'Meminta analisis foto AI...':'Tanya Tani sedang menyiapkan jawaban...');
+      setStage(payload.media_id&&capabilities?.imageAnalysis?'Meminta analisis foto AI...':'Tanya Tani sedang menyiapkan jawaban...');
       const saved = await memberApi(`/member/chat/conversations/${savedKey.current}/messages`,'POST',payload);
       if (!mountedRef.current || version !== requestVersion.current || activeThreadId !== threadIdRef.current) return;
       setThread({id:saved.id,messages:saved.messages,hasChanges:false});
@@ -334,7 +332,7 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
       if (!mountedRef.current || version !== photoVersion.current || activeThreadVersion !== requestVersion.current) return;
       setPhotoDraft({ url, name: file.name || 'Foto kebun' });
       setPhotoSpecies(contextSpecies.current||'');
-      setPhotoIntent('condition');setPhotoConsent(false);
+      setPhotoIntent('condition');
       setPhotoDescription('');
     } catch (error) {
       if (mountedRef.current && version === photoVersion.current && activeThreadVersion === requestVersion.current) setPhotoError(error instanceof Error ? error.message : 'Foto tidak dapat dibuka. Coba foto lain.');
@@ -354,7 +352,7 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
     if (!photoDraft || sendingRef.current || pending.current)return;
     const label=INTENTS.find(i=>i.value===photoIntent)!.label;
     await submitTurn({content:photoDescription.trim()||label,client_request_id:crypto.randomUUID(),intent:photoIntent,
-      ...(photoSpecies?{species:photoSpecies}:{}),external_consent:photoConsent&&Boolean(capabilities?.externalEnabled)},photoDraft);
+      ...(photoSpecies?{species:photoSpecies}:{})},photoDraft);
   }
 
   async function copyMessage(text: string) {
@@ -380,7 +378,6 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
 
       <main className="consultation-main">
         <aside className="consultation-mode-note"><Info size={16} /><p>{capabilities?.externalEnabled?'Asisten AI pertanian · demo':capabilities?.localFallback===false?'Konsultasi sedang tidak tersedia':'Panduan lokal'}{capabilities?.externalEnabled&&!capabilities.connectionVerified?' · koneksi belum diuji':''}</p></aside>
-        {capabilities?.externalEnabled&&<details className="consultation-privacy"><summary>Penggunaan layanan AI eksternal</summary><p>{capabilities.privacyNotice}</p><label><input type="checkbox" checked={externalConsent} disabled={isSending||Boolean(pending.current)} onChange={e=>setExternalConsent(e.target.checked)}/>Saya memakai teks contoh tanpa data pribadi dan menyetujui pemrosesan teks serta konteks percakapan yang sebelumnya disetujui. Tanpa persetujuan, gunakan panduan lokal.</label></details>}
 
         {!hasUserMessages && !photoDraft && !isProcessingPhoto && <div className="consultation-start">
           <div className="consultation-intro"><div><h2>Ada yang bisa dibantu?</h2><p>Tanyakan cara merawat tanaman atau ternak Anda.</p></div><img src="/assets/generated/kangkung.webp" alt="" width="94" height="108" /></div>
@@ -397,7 +394,7 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
             <div className="consultation-bubble">
               {message.photoUrl && <button type="button" className="consultation-photo-preview" onClick={()=>setPreview(message.photoUrl!)} aria-label="Perbesar foto konsultasi"><img className="consultation-message-photo" src={message.photoUrl} alt={message.photoName || 'Foto yang dilampirkan'} width="320" height="240" /></button>}
               {message.sender==='assistant'?<AnswerText text={message.text}/>:<p>{message.text}</p>}
-              {message.sender==='assistant'&&<div className="consultation-attribution"><span>{message.providerMetadata?.provider==='local'?'Panduan lokal':message.providerMetadata?.imageAnalyzed?'Dianalisis menggunakan AI':message.providerMetadata?'Jawaban AI':'Jawaban tersimpan'}</span>{message.providerMetadata?.fallbackUsed&&message.providerMetadata.provider==='local'&&<p>Jawaban menggunakan panduan lokal karena layanan AI tidak tersedia atau tidak diizinkan untuk permintaan ini.</p>}{message.providerMetadata?.model&&<details><summary>Info jawaban</summary><p>{message.providerMetadata.provider} · {message.providerMetadata.model}</p></details>}</div>}
+              {message.sender==='assistant'&&<div className="consultation-attribution"><span>{message.providerMetadata?.provider==='local'?'Panduan lokal':message.providerMetadata?.imageAnalyzed?'Dianalisis menggunakan AI':message.providerMetadata?'Jawaban AI':'Jawaban tersimpan'}</span>{message.providerMetadata?.fallbackUsed&&message.providerMetadata.provider==='local'&&<p>Jawaban menggunakan panduan lokal karena layanan AI sedang tidak tersedia.</p>}{message.providerMetadata?.model&&<details><summary>Info jawaban</summary><p>{message.providerMetadata.provider} · {message.providerMetadata.model}</p></details>}</div>}
               {message.sender === 'assistant' && <button type="button" className="consultation-copy" onClick={() => void copyMessage(message.text)}><Copy size={16} /> Salin jawaban</button>}
             </div>
           </article>)}
@@ -421,8 +418,8 @@ export function ChatAIScreen({ conversationId, conversation, onConversationChang
           <label htmlFor="photo-intent">Apa yang ingin diketahui?</label><select id="photo-intent" value={photoIntent} disabled={isSending||Boolean(pending.current)} onChange={e=>setPhotoIntent(e.target.value as TurnPayload['intent'])}>{INTENTS.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}</select>
           <label htmlFor="photo-description">Ceritakan kondisinya <span>(opsional)</span></label>
           <textarea id="photo-description" value={photoDescription} disabled={isSending||Boolean(pending.current)} onChange={(event) => setPhotoDescription(event.target.value)} maxLength={700} rows={3} placeholder="Misalnya: daun mulai kuning sejak kemarin." />
-          {capabilities?.imageAnalysis?<div className="consultation-photo-note"><label><input type="checkbox" checked={photoConsent} disabled={isSending||Boolean(pending.current)} onChange={e=>setPhotoConsent(e.target.checked)}/>Saya sudah meninjau foto dan teks contoh ini, tidak berisi identitas, orang, alamat, atau data rahasia, dan menyetujui pengiriman ke layanan AI eksternal.</label></div>:<p className="consultation-photo-note"><Info size={16}/>Analisis foto AI sedang tidak tersedia. Panduan lokal memakai keterangan Anda, bukan isi gambar.</p>}
-          <button className="consultation-photo-submit" type="submit" disabled={isSending||Boolean(pending.current)}><Leaf size={19} aria-hidden="true" />{photoConsent&&capabilities?.imageAnalysis?'Analisis foto':'Lihat panduan lokal'}</button>
+          {capabilities&&!capabilities.imageAnalysis&&<p className="consultation-photo-note"><Info size={16}/>Analisis foto AI sedang tidak tersedia. Panduan lokal memakai keterangan Anda, bukan isi gambar.</p>}
+          <button className="consultation-photo-submit" type="submit" disabled={isSending||Boolean(pending.current)}><Leaf size={19} aria-hidden="true" />{capabilities?.imageAnalysis?'Analisis foto':'Kirim foto'}</button>
         </form>}
 
         {isSending && <div className="consultation-processing" role="status"><LoaderCircle size={21} /><span>{stage||'Menyiapkan jawaban...'}</span></div>}

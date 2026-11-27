@@ -24,7 +24,6 @@ export class GeminiProvider implements ConsultationProvider {
   }
   async generate(request: ConsultationRequest, signal: AbortSignal): Promise<ProviderResponse> {
     if (!this.configured) throw new ProviderError('not_configured');
-    if (!request.externalAllowed) throw new ProviderError('privacy');
     if (this.blockedUntil > Date.now()) throw new ProviderError(this.failure === 'quota_exhausted' ? 'quota_exhausted' : this.failure === 'invalid_model' ? 'invalid_model' : 'rate_limited');
     const start = Date.now();
     let last = new ProviderError((this.failure as ProviderError['code'])||'invalid_credentials');
